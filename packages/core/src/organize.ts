@@ -13,7 +13,8 @@ export const entryPath = (entry: KBEntry, kbDir: string): string => {
   // Short stable hash of the FULL source id — a prefix slice collides when
   // ids share a provider prefix (e.g. every "claude-code-..." id).
   const file = `${slug(entry.title)}-${shortHash(entry.sourceConversationId)}.md`;
-  return path.join(kbDir, year ?? "unknown", month ?? "00", entry.project, file);
+  // `||` (not `??`) so an empty segment from a malformed date also falls back.
+  return path.join(kbDir, year || "unknown", month || "00", entry.project, file);
 };
 
 /** 8-hex-char FNV-1a hash, stable across runs for idempotent filenames. */

@@ -8,6 +8,8 @@
   ],
   "scripts": {
     "build": "tsc --build",
+    "test": "vitest run",
+    "test:watch": "vitest",
     "ingest": "tsx packages/cli/src/index.ts ingest",
     "sync": "tsx packages/cli/src/index.ts sync",
     "engram": "tsx packages/cli/src/index.ts"
@@ -15,7 +17,8 @@
   "devDependencies": {
     "@types/node": "^20.11.0",
     "tsx": "^4.7.0",
-    "typescript": "^5.4.0"
+    "typescript": "^5.4.0",
+    "vitest": "^2.1.9"
   },
   "engines": {
     "node": ">=20"
