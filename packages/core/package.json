@@ -1,0 +1,18 @@
+{
+  "name": "@engram/core",
+  "version": "0.1.0",
+  "description": "Engram core engine: parse, summarize, organize, and render LLM conversations into a portable knowledge base.",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "scripts": {
+    "build": "tsc --build"
+  },
+  "license": "MIT"
+}

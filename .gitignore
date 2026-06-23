@@ -1,0 +1,9 @@
+node_modules/
+dist/
+*.tsbuildinfo
+.env
+.env.local
+.DS_Store
+
+# Local raw capture vault (never commit raw conversations by default)
+.engram/raw/

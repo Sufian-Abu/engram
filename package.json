@@ -1,0 +1,23 @@
+{
+  "name": "engram-monorepo",
+  "private": true,
+  "version": "0.1.0",
+  "description": "Engram — your AI conversations, remembered. Capture, summarize, and own your LLM chats as a portable knowledge base.",
+  "workspaces": [
+    "packages/*"
+  ],
+  "scripts": {
+    "build": "tsc --build",
+    "ingest": "tsx packages/cli/src/index.ts ingest",
+    "sync": "tsx packages/cli/src/index.ts sync",
+    "engram": "tsx packages/cli/src/index.ts"
+  },
+  "devDependencies": {
+    "@types/node": "^20.11.0",
+    "tsx": "^4.7.0",
+    "typescript": "^5.4.0"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}

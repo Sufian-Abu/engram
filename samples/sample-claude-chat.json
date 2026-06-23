@@ -1,0 +1,15 @@
+{
+  "id": "sample-claude-001",
+  "provider": "claude",
+  "title": "Designing a rate limiter",
+  "createdAt": "2026-06-20T14:02:00Z",
+  "updatedAt": "2026-06-20T14:31:00Z",
+  "messages": [
+    { "role": "user", "content": "I need to add rate limiting to my Express API. What approach should I use?", "timestamp": "2026-06-20T14:02:00Z" },
+    { "role": "assistant", "content": "For an Express API, the main choices are a token-bucket or sliding-window algorithm. For most APIs I'd recommend a sliding-window counter backed by Redis: it's simple, memory-efficient, and accurate enough. Use one Redis key per client (IP or API key) with an expiring counter.", "timestamp": "2026-06-20T14:03:30Z" },
+    { "role": "user", "content": "We already run Redis. Let's go with sliding window. How do I avoid race conditions on the counter?", "timestamp": "2026-06-20T14:10:00Z" },
+    { "role": "assistant", "content": "Use a Lua script executed via EVAL so the increment-and-check is atomic on the Redis server. The script increments the counter, sets the TTL on first hit, and returns the current count. That eliminates the read-then-write race entirely. Limit decision: 100 requests per minute per API key, returning HTTP 429 with a Retry-After header when exceeded.", "timestamp": "2026-06-20T14:12:00Z" },
+    { "role": "user", "content": "Great. One open issue: what do we do for unauthenticated routes that have no API key?", "timestamp": "2026-06-20T14:28:00Z" },
+    { "role": "assistant", "content": "Fall back to keying on client IP for unauthenticated routes, but with a stricter limit (e.g. 20/min) since IPs are shared and easier to abuse. We still need to decide how to handle clients behind shared NAT — that's unresolved.", "timestamp": "2026-06-20T14:30:00Z" }
+  ]
+}

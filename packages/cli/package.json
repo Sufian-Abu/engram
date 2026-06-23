@@ -1,0 +1,16 @@
+{
+  "name": "@engram/cli",
+  "version": "0.1.0",
+  "description": "Engram CLI: ingest exported chats into a knowledge base and sync to Git + Google Drive.",
+  "type": "module",
+  "bin": {
+    "engram": "./dist/index.js"
+  },
+  "scripts": {
+    "build": "tsc --build"
+  },
+  "dependencies": {
+    "@engram/core": "0.1.0"
+  },
+  "license": "MIT"
+}
