@@ -9,33 +9,38 @@ Usage:
   engram sync                 Commit + push the KB to Git, then mirror to Google Drive
   engram --help               Show this help
 
-Environment (see .env.example):
-  ANTHROPIC_API_KEY   BYOK key for the summarize step (required for ingest)
-  ENGRAM_MODEL        Summarizer model (default claude-sonnet-4-6)
-  ENGRAM_KB_DIR       KB output dir (default ./kb)
-  ENGRAM_DRIVE_REMOTE rclone remote for Drive (optional)
+Provider keys (BYOK — set ONE in .env; several are free):
+  GROQ_API_KEY                Groq (free, fast)            OPENAI_API_KEY    OpenAI / ChatGPT
+  GEMINI_API_KEY              Google Gemini (free tier)    ANTHROPIC_API_KEY Claude
+  OPENROUTER_API_KEY          OpenRouter (free models)
+
+Other environment (see .env.example):
+  ENGRAM_PROVIDER             Force a provider: anthropic | openai | groq | gemini | openrouter
+  ENGRAM_MODEL                Override the summarizer model (defaults per provider)
+  ENGRAM_KB_DIR               KB output dir (default ./kb)
+  ENGRAM_DRIVE_REMOTE         rclone remote for Google Drive mirror (optional)
 `;
 
-async function main() {
+const COMMANDS: Record<string, (args: string[]) => Promise<void>> = {
+  ingest: ingestCommand,
+  sync: syncCommand,
+};
+
+const main = async (): Promise<void> => {
   const [cmd, ...rest] = process.argv.slice(2);
-  switch (cmd) {
-    case "ingest":
-      await ingestCommand(rest);
-      break;
-    case "sync":
-      await syncCommand(rest);
-      break;
-    case undefined:
-    case "--help":
-    case "-h":
-    case "help":
-      process.stdout.write(HELP);
-      break;
-    default:
-      process.stderr.write(`Unknown command: ${cmd}\n\n${HELP}`);
-      process.exit(1);
+
+  if (cmd === undefined || cmd === "--help" || cmd === "-h" || cmd === "help") {
+    process.stdout.write(HELP);
+    return;
   }
-}
+
+  const command = COMMANDS[cmd];
+  if (!command) {
+    process.stderr.write(`Unknown command: ${cmd}\n\n${HELP}`);
+    process.exit(1);
+  }
+  await command(rest);
+};
 
 main().catch((err) => {
   process.stderr.write(`\nError: ${err?.message ?? err}\n`);

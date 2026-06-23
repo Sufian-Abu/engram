@@ -15,7 +15,7 @@ import { parseClaudeCodeTranscript, isClaudeCodeTranscript } from "./claudecode.
  * Add new providers by writing a parser here; the rest of the pipeline is
  * provider-agnostic.
  */
-export function parseAny(raw: unknown): Conversation[] {
+export const parseAny = (raw: unknown): Conversation[] => {
   // Claude Code transcript: array of events, some with sessionId + user/assistant type.
   if (isClaudeCodeTranscript(raw)) {
     const conv = parseClaudeCodeTranscript(raw as any[]);
@@ -36,10 +36,9 @@ export function parseAny(raw: unknown): Conversation[] {
   // Engram normalized format (array or single).
   const items = Array.isArray(raw) ? raw : [raw];
   return items.map(parseNormalized).filter((c): c is Conversation => c !== null);
-}
+};
 
-function isChatGPTNode(x: unknown): boolean {
-  return typeof x === "object" && x !== null && "mapping" in (x as Record<string, unknown>);
-}
+const isChatGPTNode = (x: unknown): boolean =>
+  typeof x === "object" && x !== null && "mapping" in (x as Record<string, unknown>);
 
 export { parseChatGPTExport, parseNormalized, parseClaudeCodeTranscript, isClaudeCodeTranscript };

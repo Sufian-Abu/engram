@@ -1,14 +1,14 @@
 /**
- * Provider registry for the summarize step. Engram is BYOK: the user supplies a
- * key for whichever provider they like, and Engram distills conversations with
- * it. Two API "flavors" cover every provider here:
+ * The set of LLM providers Engram can summarize with. Engram is BYOK: the user
+ * supplies a key for whichever provider they like.
  *
+ * Two API "flavors" cover every provider here:
  *   - "anthropic": the Anthropic Messages API (tool-use to force JSON).
  *   - "openai":    the OpenAI Chat Completions API (function-calling to force
  *                  JSON). Groq, OpenAI, Gemini, and OpenRouter all speak this.
  *
- * Several of these have a genuinely free API key (Groq, Gemini, OpenRouter's
- * ":free" models), so a user can run Engram end-to-end at zero cost.
+ * Each provider is declared as its own named const below so the registry reads
+ * as a list of clearly-labelled entries rather than one opaque blob.
  */
 export type ApiFlavor = "anthropic" | "openai";
 
@@ -29,76 +29,80 @@ export interface ProviderSpec {
   free: boolean;
 }
 
-export const PROVIDERS: Record<string, ProviderSpec> = {
-  anthropic: {
-    id: "anthropic",
-    label: "Anthropic (Claude)",
-    flavor: "anthropic",
-    baseUrl: "https://api.anthropic.com/v1/messages",
-    defaultModel: "claude-sonnet-4-6",
-    keyEnv: "ANTHROPIC_API_KEY",
-    free: false,
-  },
-  openai: {
-    id: "openai",
-    label: "OpenAI (ChatGPT)",
-    flavor: "openai",
-    baseUrl: "https://api.openai.com/v1/chat/completions",
-    defaultModel: "gpt-4o-mini",
-    keyEnv: "OPENAI_API_KEY",
-    free: false,
-  },
-  groq: {
-    id: "groq",
-    label: "Groq (free, fast Llama/etc.)",
-    flavor: "openai",
-    baseUrl: "https://api.groq.com/openai/v1/chat/completions",
-    defaultModel: "llama-3.3-70b-versatile",
-    keyEnv: "GROQ_API_KEY",
-    free: true,
-  },
-  gemini: {
-    id: "gemini",
-    label: "Google Gemini (free tier)",
-    flavor: "openai",
-    baseUrl: "https://generativelanguage.googleapis.com/v1beta/openai/chat/completions",
-    defaultModel: "gemini-2.0-flash",
-    keyEnv: "GEMINI_API_KEY",
-    free: true,
-  },
-  openrouter: {
-    id: "openrouter",
-    label: "OpenRouter (has free models)",
-    flavor: "openai",
-    baseUrl: "https://openrouter.ai/api/v1/chat/completions",
-    defaultModel: "meta-llama/llama-3.3-70b-instruct:free",
-    keyEnv: "OPENROUTER_API_KEY",
-    free: true,
-  },
+const anthropic: ProviderSpec = {
+  id: "anthropic",
+  label: "Anthropic (Claude)",
+  flavor: "anthropic",
+  baseUrl: "https://api.anthropic.com/v1/messages",
+  defaultModel: "claude-sonnet-4-6",
+  keyEnv: "ANTHROPIC_API_KEY",
+  free: false,
 };
 
-export function getProvider(id: string): ProviderSpec {
-  const p = PROVIDERS[id];
-  if (!p) {
-    throw new Error(
-      `unknown provider "${id}". Known: ${Object.keys(PROVIDERS).join(", ")}`,
-    );
+const openai: ProviderSpec = {
+  id: "openai",
+  label: "OpenAI (ChatGPT)",
+  flavor: "openai",
+  baseUrl: "https://api.openai.com/v1/chat/completions",
+  defaultModel: "gpt-4o-mini",
+  keyEnv: "OPENAI_API_KEY",
+  free: false,
+};
+
+const groq: ProviderSpec = {
+  id: "groq",
+  label: "Groq (free, fast Llama/etc.)",
+  flavor: "openai",
+  baseUrl: "https://api.groq.com/openai/v1/chat/completions",
+  defaultModel: "llama-3.3-70b-versatile",
+  keyEnv: "GROQ_API_KEY",
+  free: true,
+};
+
+const gemini: ProviderSpec = {
+  id: "gemini",
+  label: "Google Gemini (free tier)",
+  flavor: "openai",
+  baseUrl: "https://generativelanguage.googleapis.com/v1beta/openai/chat/completions",
+  defaultModel: "gemini-2.0-flash",
+  keyEnv: "GEMINI_API_KEY",
+  free: true,
+};
+
+const openrouter: ProviderSpec = {
+  id: "openrouter",
+  label: "OpenRouter (has free models)",
+  flavor: "openai",
+  baseUrl: "https://openrouter.ai/api/v1/chat/completions",
+  defaultModel: "meta-llama/llama-3.3-70b-instruct:free",
+  keyEnv: "OPENROUTER_API_KEY",
+  free: true,
+};
+
+/** All providers, in the order they're tried when auto-detecting from env. */
+export const ALL_PROVIDERS: readonly ProviderSpec[] = [anthropic, openai, groq, gemini, openrouter];
+
+const byId = new Map(ALL_PROVIDERS.map((p) => [p.id, p]));
+
+/** Look up a provider by id, throwing a helpful error if it's unknown. */
+export const getProviderById = (id: string): ProviderSpec => {
+  const provider = byId.get(id);
+  if (!provider) {
+    const known = ALL_PROVIDERS.map((p) => p.id).join(", ");
+    throw new Error(`unknown provider "${id}". Known providers: ${known}`);
   }
-  return p;
-}
+  return provider;
+};
 
 /**
  * Pick a provider from the environment: an explicit ENGRAM_PROVIDER wins;
- * otherwise the first provider (in registry order) whose key env var is set.
+ * otherwise the first provider whose key env var has a non-empty value.
  * Returns null if no provider key is present.
  */
-export function resolveProviderFromEnv(
+export const resolveProviderFromEnv = (
   env: Record<string, string | undefined>,
-): ProviderSpec | null {
-  const explicit = env.ENGRAM_PROVIDER?.trim();
-  if (explicit) return getProvider(explicit);
-  for (const p of Object.values(PROVIDERS)) {
-    if (env[p.keyEnv]?.trim()) return p;
-  }
-  return null;
-}
+): ProviderSpec | null => {
+  const explicitId = env.ENGRAM_PROVIDER?.trim();
+  if (explicitId) return getProviderById(explicitId);
+  return ALL_PROVIDERS.find((p) => Boolean(env[p.keyEnv]?.trim())) ?? null;
+};

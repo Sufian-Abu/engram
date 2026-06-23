@@ -5,7 +5,7 @@ import type { KBEntry } from "./types.js";
  * file searchable/queryable (Obsidian, grep, scripts); the body is human- and
  * model-readable. The resume prompt is fenced so it's trivial to copy.
  */
-export function renderEntry(entry: KBEntry): string {
+export const renderEntry = (entry: KBEntry): string => {
   const fm = [
     "---",
     `title: ${yaml(entry.title)}`,
@@ -41,10 +41,8 @@ export function renderEntry(entry: KBEntry): string {
   );
 
   return `${fm}\n\n${sections.join("\n")}`;
-}
+};
 
 /** Minimal YAML scalar quoting — wrap in quotes if it could be misparsed. */
-function yaml(s: string): string {
-  if (/^[A-Za-z0-9 _.-]+$/.test(s)) return s;
-  return `"${s.replace(/"/g, '\\"')}"`;
-}
+const yaml = (s: string): string =>
+  /^[A-Za-z0-9 _.-]+$/.test(s) ? s : `"${s.replace(/"/g, '\\"')}"`;

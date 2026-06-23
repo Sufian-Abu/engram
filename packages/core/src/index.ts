@@ -6,13 +6,27 @@ export {
   parseClaudeCodeTranscript,
   isClaudeCodeTranscript,
 } from "./parsers/index.js";
-export { summarizeConversation, type SummarizeOptions } from "./summarize.js";
 export {
-  PROVIDERS,
-  getProvider,
+  summarizeConversation,
+  buildSummarizePrompt,
+  renderTranscript,
+  conversationDate,
+  toKbEntry,
+  type SummarizeOptions,
+} from "./summarize.js";
+export {
+  ALL_PROVIDERS,
+  getProviderById,
   resolveProviderFromEnv,
   type ProviderSpec,
   type ApiFlavor,
 } from "./providers.js";
+export { requestKbDraft, type StructuredRequest } from "./llm-client.js";
+export {
+  KB_TOOL_NAME,
+  KB_TOOL_DESCRIPTION,
+  KB_JSON_SCHEMA,
+  type KbEntryDraft,
+} from "./kb-schema.js";
 export { entryPath, slug } from "./organize.js";
 export { renderEntry } from "./render.js";
