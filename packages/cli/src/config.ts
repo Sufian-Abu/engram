@@ -1,5 +1,6 @@
 import fs from "node:fs";
 import path from "node:path";
+import { resolveProviderFromEnv, type ProviderSpec } from "@engram/core";
 
 /**
  * Minimal .env loader (no dependency). Loads KEY=VALUE pairs from a .env file
@@ -18,12 +19,18 @@ export function loadEnv(cwd: string = process.cwd()): void {
     let val = trimmed.slice(eq + 1).trim();
     if ((val.startsWith('"') && val.endsWith('"')) || (val.startsWith("'") && val.endsWith("'"))) {
       val = val.slice(1, -1);
+    } else {
+      // Strip an unquoted inline comment: a '#' at the start or after whitespace.
+      const c = val.match(/(^|\s)#/);
+      if (c) val = val.slice(0, c.index).trim();
     }
     if (!(key in process.env)) process.env[key] = val;
   }
 }
 
 export interface Config {
+  /** The resolved provider (anthropic / openai / groq / gemini / openrouter). */
+  provider: ProviderSpec | null;
   apiKey: string;
   model: string;
   kbDir: string;
@@ -33,11 +40,20 @@ export interface Config {
 
 export function loadConfig(): Config {
   loadEnv();
+  const provider = resolveProviderFromEnv(process.env);
   return {
-    apiKey: process.env.ANTHROPIC_API_KEY ?? "",
-    model: process.env.ENGRAM_MODEL ?? "claude-sonnet-4-6",
-    kbDir: path.resolve(process.env.ENGRAM_KB_DIR ?? "./kb"),
-    driveRemote: process.env.ENGRAM_DRIVE_REMOTE ?? "",
-    drivePath: process.env.ENGRAM_DRIVE_PATH ?? "engram-kb",
+    provider,
+    apiKey: provider ? env(provider.keyEnv) ?? "" : "",
+    // ENGRAM_MODEL overrides; otherwise fall back to the provider's default.
+    model: env("ENGRAM_MODEL") ?? provider?.defaultModel ?? "",
+    kbDir: path.resolve(env("ENGRAM_KB_DIR") ?? "./kb"),
+    driveRemote: env("ENGRAM_DRIVE_REMOTE") ?? "",
+    drivePath: env("ENGRAM_DRIVE_PATH") ?? "engram-kb",
   };
+}
+
+/** Read an env var, treating empty/whitespace-only values as unset (undefined). */
+function env(name: string): string | undefined {
+  const v = process.env[name]?.trim();
+  return v ? v : undefined;
 }

@@ -20,9 +20,15 @@ export async function ingestCommand(args: string[]): Promise<void> {
   if (!target) throw new Error("usage: engram ingest <file-or-dir>");
 
   const cfg = loadConfig();
-  if (!cfg.apiKey) {
-    throw new Error("ANTHROPIC_API_KEY is not set. Copy .env.example to .env and add your key.");
+  if (!cfg.provider || !cfg.apiKey) {
+    throw new Error(
+      "No provider API key found. Copy .env.example to .env and set one of:\n" +
+        "  GROQ_API_KEY (free)  GEMINI_API_KEY (free)  OPENROUTER_API_KEY (free)\n" +
+        "  ANTHROPIC_API_KEY    OPENAI_API_KEY\n" +
+        "Optionally set ENGRAM_PROVIDER to force which one is used.",
+    );
   }
+  process.stdout.write(`Using ${cfg.provider.label} — model ${cfg.model}\n`);
 
   const files = collectJsonFiles(path.resolve(target));
   if (files.length === 0) throw new Error(`no .json files found at ${target}`);
@@ -52,7 +58,11 @@ export async function ingestCommand(args: string[]): Promise<void> {
   for (const conv of conversations) {
     const label = conv.title ?? conv.id;
     try {
-      const entry = await summarizeConversation(conv, { apiKey: cfg.apiKey, model: cfg.model });
+      const entry = await summarizeConversation(conv, {
+        apiKey: cfg.apiKey,
+        provider: cfg.provider.id,
+        model: cfg.model,
+      });
       const outPath = entryPath(entry, cfg.kbDir);
       if (fs.existsSync(outPath)) {
         skipped++;
