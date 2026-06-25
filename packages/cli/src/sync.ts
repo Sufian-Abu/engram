@@ -15,7 +15,12 @@ import { ENV } from "./env.js";
 export const syncCommand = async (_args: string[]): Promise<void> => {
   const cfg = loadConfig();
   if (!fs.existsSync(cfg.kbDir)) throw new Error(`KB dir not found: ${cfg.kbDir}`);
+  syncKb(cfg);
+};
 
+/** Commit/push + Drive-mirror the KB. Reusable by the serve daemon; no-throw. */
+export const syncKb = (cfg: Config): void => {
+  if (!fs.existsSync(cfg.kbDir)) return;
   syncToGit(cfg);
   syncToDrive(cfg);
 };

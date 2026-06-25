@@ -4,6 +4,7 @@ const STORAGE_KEY = "conversations";
 
 const els = {
   count: document.getElementById("count") as HTMLElement,
+  status: document.getElementById("status") as HTMLElement,
   list: document.getElementById("list") as HTMLUListElement,
   exportBtn: document.getElementById("export") as HTMLButtonElement,
   clearBtn: document.getElementById("clear") as HTMLButtonElement,
@@ -28,6 +29,7 @@ async function render(): Promise<void> {
   els.count.textContent = String(conversations.length);
   els.exportBtn.disabled = conversations.length === 0;
   els.clearBtn.disabled = conversations.length === 0;
+  await renderStatus();
 
   els.list.innerHTML = "";
   if (conversations.length === 0) {
@@ -48,6 +50,14 @@ async function render(): Promise<void> {
     li.append(title, meta);
     els.list.append(li);
   }
+}
+
+/** Reflect whether the local `engram serve` daemon is auto-syncing captures. */
+async function renderStatus(): Promise<void> {
+  const { daemonConnected } = await chrome.storage.local.get("daemonConnected");
+  els.status.innerHTML = daemonConnected
+    ? `<span class="on">● Auto-sync on</span> — captures ingest &amp; push automatically`
+    : `<span class="off">○ Auto-sync off</span> — run <code>engram serve</code>, or Export JSON below`;
 }
 
 /** Download all captures as a JSON array — exactly what `engram ingest` reads. */

@@ -1,12 +1,15 @@
 #!/usr/bin/env node
 import { ingestCommand } from "./ingest.js";
 import { syncCommand } from "./sync.js";
+import { serveCommand } from "./serve.js";
 
 const HELP = `engram — your AI conversations, remembered.
 
 Usage:
   engram ingest <path>        Parse exported chats (file or dir) -> summarize -> write KB
   engram sync                 Commit + push the KB to Git, then mirror to Google Drive
+  engram serve [--port n]     Run the local daemon the browser extension posts to
+                              (auto-ingest + auto-sync; no manual steps)
   engram --help               Show this help
 
 Provider keys (BYOK — set ONE in .env; several are free):
@@ -24,6 +27,7 @@ Other environment (see .env.example):
 const COMMANDS: Record<string, (args: string[]) => Promise<void>> = {
   ingest: ingestCommand,
   sync: syncCommand,
+  serve: serveCommand,
 };
 
 const main = async (): Promise<void> => {

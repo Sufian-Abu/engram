@@ -112,7 +112,17 @@ Then load it in any Chromium browser (Chrome, Edge, Brave, Arc):
 chrome://extensions  →  enable Developer mode  →  Load unpacked  →  pick the dist/ (or unzipped) folder
 ```
 
-Open a conversation on claude.ai or chatgpt.com — the toolbar badge counts what it captures. Click the icon → **Export JSON**, then:
+Open a conversation on claude.ai or chatgpt.com — the toolbar badge counts what it captures.
+
+**Hands-off mode (recommended).** Run the local daemon once and the extension does the rest — every conversation you open is summarized and pushed automatically, no clicking:
+
+```bash
+npm run serve        # starts the daemon on localhost:8765
+```
+
+The extension posts each capture to it; the daemon ingests and (after a short debounce) syncs to your KB repo and Drive. The popup shows **● Auto-sync on** when it's connected. Leave it running, or set it to start at login (see below).
+
+**Manual mode.** No daemon? The popup's **Export JSON** still works:
 
 ```bash
 npm run ingest -- ~/Downloads/engram-claude-conversations.json

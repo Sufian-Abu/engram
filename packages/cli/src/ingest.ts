@@ -1,13 +1,8 @@
 import fs from "node:fs";
 import path from "node:path";
-import {
-  parseAny,
-  summarizeConversation,
-  entryPath,
-  renderEntry,
-  type Conversation,
-} from "@engram/core";
-import { loadConfig, type Config } from "./config.js";
+import { parseAny, type Conversation } from "@engram/core";
+import { loadConfig } from "./config.js";
+import { writeKbEntry } from "./writer.js";
 
 /**
  * `engram ingest <path>`
@@ -32,38 +27,17 @@ export const ingestCommand = async (args: string[]): Promise<void> => {
   let written = 0;
   let skipped = 0;
   for (const conv of conversations) {
-    const outcome = await writeEntry(conv, cfg);
+    const outcome = await writeKbEntry(
+      conv,
+      cfg,
+      (l) => process.stdout.write(`  ${l}\n`),
+      (l) => process.stderr.write(`  ! ${l}\n`),
+    );
     if (outcome === "written") written++;
     else if (outcome === "skipped") skipped++;
   }
 
   process.stdout.write(`\nDone. ${written} written, ${skipped} skipped. KB at ${cfg.kbDir}\n`);
-};
-
-type WriteOutcome = "written" | "skipped" | "failed";
-
-/** Summarize one conversation and write its KB file, unless it already exists. */
-const writeEntry = async (conv: Conversation, cfg: Config): Promise<WriteOutcome> => {
-  const label = conv.title ?? conv.id;
-  try {
-    const entry = await summarizeConversation(conv, {
-      apiKey: cfg.apiKey,
-      provider: cfg.provider!.id,
-      model: cfg.model,
-    });
-    const outPath = entryPath(entry, cfg.kbDir);
-    if (fs.existsSync(outPath)) {
-      process.stdout.write(`  = exists, skipped: ${label}\n`);
-      return "skipped";
-    }
-    fs.mkdirSync(path.dirname(outPath), { recursive: true });
-    fs.writeFileSync(outPath, renderEntry(entry));
-    process.stdout.write(`  + ${path.relative(cfg.kbDir, outPath)}\n`);
-    return "written";
-  } catch (e: any) {
-    process.stderr.write(`  ! failed "${label}": ${e.message}\n`);
-    return "failed";
-  }
 };
 
 /** Parse one file into conversations, logging and swallowing parse errors. */
