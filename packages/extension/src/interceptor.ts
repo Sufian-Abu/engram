@@ -1,11 +1,11 @@
-import { isConversationUrl } from "./claude-web.js";
-import { ENGRAM_SOURCE, type CapturedMessage } from "./types.js";
+import { matchProvider } from "./providers/index.js";
+import { ENGRAM_SOURCE, type CapturedMessage, type ProviderId } from "./types.js";
 
 /**
- * Runs in the PAGE (MAIN world) so it can see claude.ai's own fetch calls.
- * We wrap fetch, let the real call proceed untouched, and on a single-
- * conversation response we clone it (never consuming the page's body) and
- * postMessage the raw JSON out to the content script. Network interception
+ * Runs in the PAGE (MAIN world) so it can see the site's own fetch calls.
+ * We wrap fetch, let the real call proceed untouched, and when a response URL
+ * belongs to a known provider we clone it (never consuming the page's body)
+ * and postMessage the raw JSON out to the content script. Network interception
  * beats DOM scraping: it survives UI redesigns and gets the full transcript.
  */
 const originalFetch = window.fetch;
@@ -14,12 +14,13 @@ window.fetch = async function patchedFetch(...args): Promise<Response> {
   const response = await originalFetch.apply(this, args);
   try {
     const url = requestUrl(args[0]);
-    if (url && isConversationUrl(url)) {
+    const provider = url ? matchProvider(url) : null;
+    if (provider) {
       // Clone first — reading the body of the original would starve the page.
       response
         .clone()
         .json()
-        .then((payload) => postCapture(payload))
+        .then((payload) => postCapture(provider, payload))
         .catch(() => {
           /* non-JSON or already-consumed clone: ignore */
         });
@@ -37,11 +38,11 @@ function requestUrl(input: unknown): string | null {
   return null;
 }
 
-function postCapture(payload: unknown): void {
+function postCapture(provider: ProviderId, payload: unknown): void {
   const message: CapturedMessage = {
     source: ENGRAM_SOURCE,
     kind: "conversation",
-    provider: "claude",
+    provider,
     payload,
   };
   window.postMessage(message, window.location.origin);

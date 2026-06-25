@@ -6,6 +6,8 @@
  */
 export type Role = "user" | "assistant" | "system" | "tool";
 
+export type ProviderId = "claude" | "chatgpt" | "gemini";
+
 export interface Message {
   role: Role;
   content: string;
@@ -14,7 +16,7 @@ export interface Message {
 
 export interface Conversation {
   id: string;
-  provider: "claude" | "chatgpt" | "gemini";
+  provider: ProviderId;
   title?: string;
   createdAt?: string;
   updatedAt?: string;
@@ -26,7 +28,7 @@ export interface CapturedMessage {
   source: "engram";
   kind: "conversation";
   /** The provider whose API the payload came from. */
-  provider: "claude";
+  provider: ProviderId;
   /** The raw, unparsed provider response (parsed in the service worker). */
   payload: unknown;
 }

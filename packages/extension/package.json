@@ -7,6 +7,8 @@
   "scripts": {
     "build": "node build.mjs",
     "watch": "node build.mjs --watch",
+    "package": "node package.mjs",
+    "icons": "node generate-icons.mjs",
     "typecheck": "tsc --noEmit"
   },
   "devDependencies": {

@@ -1,12 +1,11 @@
-import type { Conversation, Message, Role } from "./types.js";
+import type { Conversation, Message, Role } from "../types.js";
+import type { WebProvider } from "./types.js";
 
 /**
- * Parse a claude.ai `chat_conversations/<uuid>` API response into Engram's
- * normalized Conversation. The response looks like:
+ * claude.ai. Conversations load from `chat_conversations/<uuid>`:
  *   { uuid, name, created_at, updated_at, chat_messages: [
- *       { uuid, sender: "human"|"assistant", text, created_at,
- *         content: [{ type: "text", text }] }, ... ] }
- * Everything is read defensively — the schema is the provider's, not ours.
+ *       { uuid, sender: "human"|"assistant", text,
+ *         content: [{ type: "text", text }], created_at } ] }
  */
 export function parseClaudeWeb(raw: unknown): Conversation | null {
   if (!isObject(raw)) return null;
@@ -14,9 +13,7 @@ export function parseClaudeWeb(raw: unknown): Conversation | null {
   const rawMessages = raw.chat_messages;
   if (!id || !Array.isArray(rawMessages)) return null;
 
-  const messages: Message[] = rawMessages
-    .map(toMessage)
-    .filter((m): m is Message => m !== null);
+  const messages = rawMessages.map(toMessage).filter((m): m is Message => m !== null);
   if (messages.length === 0) return null;
 
   return {
@@ -29,9 +26,8 @@ export function parseClaudeWeb(raw: unknown): Conversation | null {
   };
 }
 
-/** True if the URL is a single-conversation fetch we want to capture. */
-export function isConversationUrl(url: string): boolean {
-  // .../chat_conversations/<uuid>  — the list endpoint has no trailing uuid.
+/** A single-conversation fetch (has a trailing uuid); the list endpoint doesn't. */
+export function matchClaudeUrl(url: string): boolean {
   return /\/chat_conversations\/[0-9a-f-]{36}/i.test(url);
 }
 
@@ -61,3 +57,9 @@ function isObject(x: unknown): x is Record<string, unknown> {
 function str(x: unknown): string {
   return typeof x === "string" ? x : "";
 }
+
+export const claudeProvider: WebProvider = {
+  id: "claude",
+  matchUrl: matchClaudeUrl,
+  parse: parseClaudeWeb,
+};

@@ -1,12 +1,12 @@
-import { parseClaudeWeb } from "./claude-web.js";
+import { parseFor } from "./providers/index.js";
 import { upsertById } from "./merge.js";
 import { ENGRAM_SOURCE, type CapturedMessage, type Conversation } from "./types.js";
 
 const STORAGE_KEY = "conversations";
 
 chrome.runtime.onMessage.addListener((message: Partial<CapturedMessage>) => {
-  if (message?.source !== ENGRAM_SOURCE || message.kind !== "conversation") return;
-  const conversation = parseClaudeWeb(message.payload);
+  if (message?.source !== ENGRAM_SOURCE || message.kind !== "conversation" || !message.provider) return;
+  const conversation = parseFor(message.provider, message.payload);
   if (conversation) void storeConversation(conversation);
 });
 
