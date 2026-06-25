@@ -1,7 +1,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import {
-  summarizeConversation,
+  summarizeWithProviders,
   entryPath,
   renderEntry,
   conversationHash,
@@ -39,10 +39,9 @@ export async function writeKbEntry(
       return "skipped";
     }
 
-    const entry = await summarizeConversation(conv, {
-      apiKey: cfg.apiKey,
-      provider: cfg.provider!.id,
-      model: cfg.model,
+    const entry = await summarizeWithProviders(conv, cfg.chain, {
+      onFallback: (failed, error, next) =>
+        log(`${failed} failed (${error.slice(0, 80)}) — trying ${next}`),
     });
     entry.sourceHash = hash;
 

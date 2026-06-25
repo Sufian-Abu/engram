@@ -8,11 +8,13 @@ export {
 } from "./parsers/index.js";
 export {
   summarizeConversation,
+  summarizeWithProviders,
   buildSummarizePrompt,
   renderTranscript,
   conversationDate,
   toKbEntry,
   type SummarizeOptions,
+  type ProviderCandidate,
 } from "./summarize.js";
 export {
   ALL_PROVIDERS,

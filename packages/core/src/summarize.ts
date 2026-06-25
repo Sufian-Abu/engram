@@ -63,6 +63,47 @@ export const summarizeConversation = async (
   throw lastError;
 };
 
+export interface ProviderCandidate {
+  provider: string;
+  apiKey: string;
+  model?: string;
+}
+
+/**
+ * Summarize trying each provider in order, falling through to the next on any
+ * failure (rate limit, quota, bad key…). Lets a free provider that's out of
+ * tokens hand off to another free provider that still has budget. Returns the
+ * first success; throws the last error if all candidates fail.
+ */
+export const summarizeWithProviders = async (
+  conv: Conversation,
+  candidates: ProviderCandidate[],
+  opts?: {
+    maxChars?: number;
+    /** Called when one provider fails and another will be tried. */
+    onFallback?: (failed: string, error: string, next: string) => void;
+  },
+): Promise<KBEntry> => {
+  if (candidates.length === 0) throw new Error("no provider key configured");
+  let lastError: unknown;
+  for (let i = 0; i < candidates.length; i++) {
+    const c = candidates[i]!;
+    try {
+      return await summarizeConversation(conv, {
+        apiKey: c.apiKey,
+        provider: c.provider,
+        model: c.model,
+        maxChars: opts?.maxChars,
+      });
+    } catch (e) {
+      lastError = e;
+      const next = candidates[i + 1];
+      if (next) opts?.onFallback?.(c.provider, String((e as any)?.message ?? e), next.provider);
+    }
+  }
+  throw lastError;
+};
+
 const MAX_SHRINK_ATTEMPTS = 5;
 const MIN_TRANSCRIPT_CHARS = 4000;
 

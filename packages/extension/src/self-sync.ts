@@ -1,5 +1,5 @@
 import {
-  summarizeConversation,
+  summarizeWithProviders,
   renderEntry,
   conversationHash,
   slug,
@@ -7,7 +7,7 @@ import {
   type Conversation,
   type KBEntry,
 } from "@engram/core/browser";
-import { getSettings, canSummarize, canPush } from "./settings.js";
+import { getSettings, canSummarize, canPush, buildCandidates } from "./settings.js";
 import { pushFile } from "./github.js";
 
 export type SyncOutcome =
@@ -41,10 +41,9 @@ export async function syncConversation(conv: Conversation): Promise<SyncOutcome>
 
   let entry: KBEntry;
   try {
-    entry = await summarizeConversation(conv, {
-      apiKey: settings.apiKey,
-      provider: settings.provider,
-      model: settings.model || undefined,
+    entry = await summarizeWithProviders(conv, buildCandidates(settings), {
+      onFallback: (failed, error, next) =>
+        console.warn(`[engram] ${failed} failed (${error.slice(0, 80)}) — trying ${next}`),
     });
     await chrome.storage.local.remove("lastError");
   } catch (e: any) {

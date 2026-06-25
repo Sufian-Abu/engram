@@ -5,14 +5,16 @@
     <title>Engram settings</title>
     <style>
       :root { color-scheme: light dark; }
-      body { max-width: 560px; margin: 0 auto; padding: 28px 20px; font: 14px/1.5 system-ui, sans-serif; }
+      body { max-width: 580px; margin: 0 auto; padding: 28px 20px; font: 14px/1.5 system-ui, sans-serif; }
       h1 { font-size: 18px; margin: 0 0 4px; }
       p.sub { color: #888; margin: 0 0 20px; }
       h2 { font-size: 14px; margin: 22px 0 8px; border-top: 1px solid rgba(127,127,127,0.2); padding-top: 16px; }
       label { display: block; font-weight: 600; margin: 12px 0 4px; }
+      .free { color: #1a9d4a; font-weight: 600; font-size: 11px; }
+      .paid { color: #b08900; font-weight: 600; font-size: 11px; }
       input, select { width: 100%; box-sizing: border-box; padding: 8px 10px; border: 1px solid rgba(127,127,127,0.4); border-radius: 6px; background: transparent; color: inherit; font: inherit; }
       .hint { color: #888; font-size: 12px; margin-top: 3px; }
-      .hint a { color: #6b4cff; }
+      .hint a, a { color: #6b4cff; }
       .row { display: flex; gap: 10px; align-items: center; margin-top: 22px; }
       button { padding: 9px 18px; border: 0; border-radius: 6px; background: #6b4cff; color: #fff; font-weight: 600; cursor: pointer; }
       #status { font-size: 13px; }
@@ -24,19 +26,34 @@
     <h1>Engram settings</h1>
     <p class="sub">Set these once. The extension then summarizes your conversations and saves them — no terminal, no daemon.</p>
 
-    <h2>Summarize (required)</h2>
-    <label for="provider">Provider</label>
-    <select id="provider">
-      <option value="groq">Groq — free</option>
-      <option value="gemini">Google Gemini — free tier</option>
-      <option value="openrouter">OpenRouter — free models</option>
+    <h2>Provider keys (set one or more)</h2>
+    <p class="hint">Add keys for several and Engram falls back automatically when one is rate-limited — so you rarely run out. The <b>primary</b> is tried first.</p>
+
+    <label for="primary">Primary provider</label>
+    <select id="primary">
+      <option value="groq">Groq</option>
+      <option value="gemini">Google Gemini</option>
+      <option value="openrouter">OpenRouter</option>
       <option value="anthropic">Anthropic (Claude)</option>
       <option value="openai">OpenAI (ChatGPT)</option>
     </select>
-    <label for="apiKey">API key</label>
-    <input id="apiKey" type="password" placeholder="paste your key" autocomplete="off" />
-    <div class="hint" id="keyHint"></div>
-    <label for="model">Model <span class="muted">(optional)</span></label>
+
+    <label for="key-groq">Groq <span class="free">FREE</span> — <a href="https://console.groq.com/keys" target="_blank">get key</a></label>
+    <input id="key-groq" type="password" placeholder="gsk_…" autocomplete="off" />
+
+    <label for="key-gemini">Google Gemini <span class="free">FREE</span> — <a href="https://aistudio.google.com/apikey" target="_blank">get key</a></label>
+    <input id="key-gemini" type="password" placeholder="AIza…" autocomplete="off" />
+
+    <label for="key-openrouter">OpenRouter <span class="free">FREE models</span> — <a href="https://openrouter.ai/keys" target="_blank">get key</a></label>
+    <input id="key-openrouter" type="password" placeholder="sk-or-…" autocomplete="off" />
+
+    <label for="key-anthropic">Anthropic <span class="paid">PAID</span> — <a href="https://console.anthropic.com" target="_blank">get key</a></label>
+    <input id="key-anthropic" type="password" placeholder="sk-ant-…" autocomplete="off" />
+
+    <label for="key-openai">OpenAI <span class="paid">PAID</span> — <a href="https://platform.openai.com/api-keys" target="_blank">get key</a></label>
+    <input id="key-openai" type="password" placeholder="sk-…" autocomplete="off" />
+
+    <label for="model">Model override <span class="muted">(optional, primary only)</span></label>
     <input id="model" type="text" placeholder="leave blank for the provider default" />
 
     <h2>Save to GitHub (optional)</h2>

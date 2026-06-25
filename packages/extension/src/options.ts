@@ -1,54 +1,48 @@
-import { getSettings, saveSettings, DEFAULT_SETTINGS, type Settings } from "./settings.js";
-
-const KEY_HINTS: Record<string, string> = {
-  groq: 'Free key at <a href="https://console.groq.com/keys" target="_blank">console.groq.com/keys</a>',
-  gemini: 'Free key at <a href="https://aistudio.google.com/apikey" target="_blank">aistudio.google.com/apikey</a>',
-  openrouter: 'Key at <a href="https://openrouter.ai/keys" target="_blank">openrouter.ai/keys</a> (use a :free model)',
-  anthropic: 'Key at <a href="https://console.anthropic.com" target="_blank">console.anthropic.com</a>',
-  openai: 'Key at <a href="https://platform.openai.com/api-keys" target="_blank">platform.openai.com</a>',
-};
+import {
+  getSettings,
+  saveSettings,
+  DEFAULT_SETTINGS,
+  PROVIDER_ORDER,
+  type Settings,
+} from "./settings.js";
 
 const $ = <T extends HTMLElement>(id: string) => document.getElementById(id) as T;
 
-const fields = {
-  provider: $<HTMLSelectElement>("provider"),
-  apiKey: $<HTMLInputElement>("apiKey"),
-  model: $<HTMLInputElement>("model"),
-  githubToken: $<HTMLInputElement>("githubToken"),
-  githubRepo: $<HTMLInputElement>("githubRepo"),
-  githubBranch: $<HTMLInputElement>("githubBranch"),
-};
-const keyHint = $<HTMLElement>("keyHint");
+const primary = $<HTMLSelectElement>("primary");
+const model = $<HTMLInputElement>("model");
+const githubToken = $<HTMLInputElement>("githubToken");
+const githubRepo = $<HTMLInputElement>("githubRepo");
+const githubBranch = $<HTMLInputElement>("githubBranch");
 const status = $<HTMLElement>("status");
+const keyInput = (id: string) => $<HTMLInputElement>(`key-${id}`);
 
 void load();
-fields.provider.addEventListener("change", updateKeyHint);
 $<HTMLButtonElement>("save").addEventListener("click", save);
 
 async function load(): Promise<void> {
   const s = await getSettings();
-  fields.provider.value = s.provider;
-  fields.apiKey.value = s.apiKey;
-  fields.model.value = s.model;
-  fields.githubToken.value = s.githubToken;
-  fields.githubRepo.value = s.githubRepo;
-  fields.githubBranch.value = s.githubBranch || "main";
-  updateKeyHint();
-}
-
-function updateKeyHint(): void {
-  keyHint.innerHTML = KEY_HINTS[fields.provider.value] ?? "";
+  primary.value = s.provider;
+  model.value = s.model;
+  githubToken.value = s.githubToken;
+  githubRepo.value = s.githubRepo;
+  githubBranch.value = s.githubBranch || "main";
+  for (const id of PROVIDER_ORDER) keyInput(id).value = s.keys[id] ?? "";
 }
 
 async function save(): Promise<void> {
+  const keys: Record<string, string> = {};
+  for (const id of PROVIDER_ORDER) {
+    const v = keyInput(id).value.trim();
+    if (v) keys[id] = v;
+  }
   const settings: Settings = {
     ...DEFAULT_SETTINGS,
-    provider: fields.provider.value,
-    apiKey: fields.apiKey.value.trim(),
-    model: fields.model.value.trim(),
-    githubToken: fields.githubToken.value.trim(),
-    githubRepo: fields.githubRepo.value.trim(),
-    githubBranch: fields.githubBranch.value.trim() || "main",
+    provider: primary.value,
+    keys,
+    model: model.value.trim(),
+    githubToken: githubToken.value.trim(),
+    githubRepo: githubRepo.value.trim(),
+    githubBranch: githubBranch.value.trim() || "main",
   };
   await saveSettings(settings);
   status.textContent = "Saved ✓";

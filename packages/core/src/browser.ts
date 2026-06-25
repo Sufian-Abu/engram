@@ -6,11 +6,13 @@
  */
 export {
   summarizeConversation,
+  summarizeWithProviders,
   buildSummarizePrompt,
   renderTranscript,
   conversationDate,
   toKbEntry,
   type SummarizeOptions,
+  type ProviderCandidate,
 } from "./summarize.js";
 export { renderEntry } from "./render.js";
 export { slug, shortHash, conversationHash } from "./util.js";
