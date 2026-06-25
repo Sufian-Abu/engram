@@ -44,4 +44,12 @@ describe("buildCandidates (failover order)", () => {
   it("returns nothing when no keys are set", () => {
     expect(buildCandidates(DEFAULT_SETTINGS)).toEqual([]);
   });
+
+  it("includes Ollama (no key) when it's the primary, with a dummy key", () => {
+    const s = withKeys({}, { provider: "ollama" });
+    expect(canSummarize(s)).toBe(true); // local provider needs no key
+    const c = buildCandidates(s);
+    expect(c).toHaveLength(1);
+    expect(c[0]).toMatchObject({ provider: "ollama", apiKey: "ollama" });
+  });
 });

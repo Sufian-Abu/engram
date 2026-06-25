@@ -102,6 +102,9 @@ Engram never ships a key — you use your own, so there's no cost or trust hande
 | OpenRouter | free models | `meta-llama/llama-3.3-70b-instruct:free` | `OPENROUTER_API_KEY` |
 | Anthropic | paid | `claude-sonnet-4-6` | `ANTHROPIC_API_KEY` |
 | OpenAI | paid | `gpt-4o-mini` | `OPENAI_API_KEY` |
+| **Ollama** | **local, no key** | `llama3.1` | — run [Ollama](https://ollama.com), set `ENGRAM_PROVIDER=ollama` |
+
+Set keys for several and Engram **fails over** automatically when one is rate-limited. Bigger-context providers (Gemini, Claude) get more of the conversation, so they summarize better than a tight free tier. For full privacy with no cloud at all, use **Ollama** — summaries run on your own machine.
 
 ### Capturing real conversations
 

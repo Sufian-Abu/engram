@@ -50,4 +50,16 @@ describe("getProviderById", () => {
     expect(new Set(ids).size).toBe(ids.length);
     for (const p of ALL_PROVIDERS) expect(p.keyEnv).toMatch(/_API_KEY$/);
   });
+
+  it("sizes context per provider — Groq small, Gemini/Claude large", () => {
+    expect(getProviderById("gemini").maxInputChars).toBeGreaterThan(getProviderById("groq").maxInputChars);
+    expect(getProviderById("anthropic").maxInputChars).toBeGreaterThan(getProviderById("groq").maxInputChars);
+  });
+
+  it("Ollama is a local, no-key provider pointed at localhost", () => {
+    const o = getProviderById("ollama");
+    expect(o.noKeyRequired).toBe(true);
+    expect(o.baseUrl).toContain("localhost:11434");
+    expect(o.free).toBe(true);
+  });
 });

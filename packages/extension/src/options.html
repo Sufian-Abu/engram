@@ -36,6 +36,7 @@
       <option value="openrouter">OpenRouter</option>
       <option value="anthropic">Anthropic (Claude)</option>
       <option value="openai">OpenAI (ChatGPT)</option>
+      <option value="ollama">Ollama (local, no key)</option>
     </select>
 
     <label for="key-groq">Groq <span class="free">FREE</span> — <a href="https://console.groq.com/keys" target="_blank">get key</a></label>
@@ -52,6 +53,8 @@
 
     <label for="key-openai">OpenAI <span class="paid">PAID</span> — <a href="https://platform.openai.com/api-keys" target="_blank">get key</a></label>
     <input id="key-openai" type="password" placeholder="sk-…" autocomplete="off" />
+
+    <p class="hint" style="margin-top:12px"><b>Ollama</b> <span class="free">LOCAL · FREE · PRIVATE</span> — no key needed. Run <a href="https://ollama.com" target="_blank">Ollama</a> locally (<code>ollama pull llama3.1</code>), pick it as the primary provider above, and conversations are summarized on your own machine — nothing leaves your computer.</p>
 
     <label for="model">Model override <span class="muted">(optional, primary only)</span></label>
     <input id="model" type="text" placeholder="leave blank for the provider default" />

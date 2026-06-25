@@ -15,8 +15,8 @@ export const ingestCommand = async (args: string[]): Promise<void> => {
   if (!target) throw new Error("usage: engram ingest <file-or-dir>");
 
   const cfg = loadConfig();
-  if (!cfg.provider || !cfg.apiKey) throw new Error(MISSING_KEY_MESSAGE);
-  process.stdout.write(`Using ${cfg.provider.label} — model ${cfg.model}\n`);
+  if (cfg.chain.length === 0) throw new Error(MISSING_KEY_MESSAGE);
+  process.stdout.write(`Using ${cfg.provider?.label ?? cfg.chain[0]!.provider} — model ${cfg.model || "default"}\n`);
 
   const files = collectJsonFiles(path.resolve(target));
   if (files.length === 0) throw new Error(`no .json/.jsonl files found at ${target}`);

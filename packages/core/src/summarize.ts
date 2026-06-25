@@ -38,8 +38,9 @@ export const summarizeConversation = async (
 
   // Long chats can exceed a provider's per-request / per-minute token budget
   // (e.g. Groq's free tier). On a "too large" error, halve the transcript and
-  // retry — a truncated summary beats none.
-  let maxChars = opts.maxChars ?? DEFAULT_MAX_TRANSCRIPT_CHARS;
+  // retry — a truncated summary beats none. The starting size is provider-aware
+  // so big-context providers (Gemini/Claude) summarize far more of the chat.
+  let maxChars = opts.maxChars ?? provider.maxInputChars ?? DEFAULT_MAX_TRANSCRIPT_CHARS;
   let lastError: unknown;
   for (let attempt = 0; attempt < MAX_SHRINK_ATTEMPTS; attempt++) {
     const transcript = renderTranscript(conv, maxChars);

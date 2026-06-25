@@ -40,7 +40,10 @@ export const buildProviderChain = (
   primaryId: string | undefined,
   primaryModel: string,
 ): ProviderCandidate[] => {
-  const configured = ALL_PROVIDERS.filter((p) => env[p.keyEnv]?.trim());
+  // Providers with a key, plus a no-key provider (Ollama) when it's the primary.
+  const configured = ALL_PROVIDERS.filter(
+    (p) => env[p.keyEnv]?.trim() || (p.noKeyRequired && p.id === primaryId),
+  );
   const ordered = [...configured].sort((a, b) => {
     if (a.id === primaryId) return -1;
     if (b.id === primaryId) return 1;
@@ -48,7 +51,7 @@ export const buildProviderChain = (
   });
   return ordered.map((p) => ({
     provider: p.id,
-    apiKey: env[p.keyEnv]!.trim(),
+    apiKey: env[p.keyEnv]?.trim() || (p.noKeyRequired ? "ollama" : ""),
     // Only the primary honors an ENGRAM_MODEL override; fallbacks use defaults.
     model: p.id === primaryId ? primaryModel || undefined : undefined,
   }));

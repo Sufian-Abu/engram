@@ -27,6 +27,15 @@ export interface ProviderSpec {
   keyEnv: string;
   /** True if the provider offers a no-cost API key / free tier. */
   free: boolean;
+  /**
+   * How much transcript (in characters) to send. Tuned to the provider's
+   * context window + rate limits: small for Groq's tight free tier, large for
+   * big-context providers like Gemini and Claude — so they summarize more of
+   * the conversation and produce better notes.
+   */
+  maxInputChars: number;
+  /** True if the provider needs no API key (e.g. a local server like Ollama). */
+  noKeyRequired?: boolean;
 }
 
 const anthropic: ProviderSpec = {
@@ -37,6 +46,7 @@ const anthropic: ProviderSpec = {
   defaultModel: "claude-sonnet-4-6",
   keyEnv: "ANTHROPIC_API_KEY",
   free: false,
+  maxInputChars: 200_000,
 };
 
 const openai: ProviderSpec = {
@@ -47,6 +57,7 @@ const openai: ProviderSpec = {
   defaultModel: "gpt-4o-mini",
   keyEnv: "OPENAI_API_KEY",
   free: false,
+  maxInputChars: 100_000,
 };
 
 const groq: ProviderSpec = {
@@ -57,6 +68,8 @@ const groq: ProviderSpec = {
   defaultModel: "llama-3.3-70b-versatile",
   keyEnv: "GROQ_API_KEY",
   free: true,
+  // Groq's free tier is 12k tokens/minute — keep the request small.
+  maxInputChars: 28_000,
 };
 
 const gemini: ProviderSpec = {
@@ -67,6 +80,8 @@ const gemini: ProviderSpec = {
   defaultModel: "gemini-2.0-flash",
   keyEnv: "GEMINI_API_KEY",
   free: true,
+  // 1M-token context + generous free tier — send much more for better summaries.
+  maxInputChars: 200_000,
 };
 
 const openrouter: ProviderSpec = {
@@ -77,10 +92,24 @@ const openrouter: ProviderSpec = {
   defaultModel: "meta-llama/llama-3.3-70b-instruct:free",
   keyEnv: "OPENROUTER_API_KEY",
   free: true,
+  maxInputChars: 28_000,
+};
+
+const ollama: ProviderSpec = {
+  id: "ollama",
+  label: "Ollama (local, no key, private)",
+  flavor: "openai",
+  baseUrl: "http://localhost:11434/v1/chat/completions",
+  defaultModel: "llama3.1",
+  keyEnv: "OLLAMA_API_KEY", // unused; Ollama needs no key
+  free: true,
+  noKeyRequired: true,
+  // Local models are often 8k–128k context and slower — keep it moderate.
+  maxInputChars: 24_000,
 };
 
 /** All providers, in the order they're tried when auto-detecting from env. */
-export const ALL_PROVIDERS: readonly ProviderSpec[] = [anthropic, openai, groq, gemini, openrouter];
+export const ALL_PROVIDERS: readonly ProviderSpec[] = [anthropic, openai, groq, gemini, openrouter, ollama];
 
 const byId = new Map(ALL_PROVIDERS.map((p) => [p.id, p]));
 

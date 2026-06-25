@@ -17,7 +17,7 @@ const SYNC_DEBOUNCE_MS = 8000;
  */
 export const serveCommand = async (args: string[]): Promise<void> => {
   const cfg = loadConfig();
-  if (!cfg.provider || !cfg.apiKey) throw new Error(MISSING_KEY_MESSAGE);
+  if (cfg.chain.length === 0) throw new Error(MISSING_KEY_MESSAGE);
 
   const port = Number(flag(args, "--port") ?? process.env.ENGRAM_SERVE_PORT ?? DEFAULT_PORT);
   const scheduleSync = makeDebouncedSync(cfg);

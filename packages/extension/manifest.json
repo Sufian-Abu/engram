@@ -15,6 +15,7 @@
     "https://api.anthropic.com/*",
     "https://generativelanguage.googleapis.com/*",
     "https://openrouter.ai/*",
+    "http://localhost:11434/*",
     "https://api.github.com/*"
   ],
   "options_page": "options.html",

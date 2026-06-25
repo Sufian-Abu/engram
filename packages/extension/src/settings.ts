@@ -22,8 +22,10 @@ export interface Settings {
 }
 
 /** Provider ids shown in Options, free ones first (also the fallback order). */
-export const PROVIDER_ORDER = ["groq", "gemini", "openrouter", "anthropic", "openai"] as const;
-const FREE = new Set(["groq", "gemini", "openrouter"]);
+export const PROVIDER_ORDER = ["groq", "gemini", "openrouter", "anthropic", "openai", "ollama"] as const;
+const FREE = new Set(["groq", "gemini", "openrouter", "ollama"]);
+/** Providers that need no API key (a local server). */
+export const NO_KEY = new Set(["ollama"]);
 
 export const DEFAULT_SETTINGS: Settings = {
   provider: "groq",
@@ -51,8 +53,9 @@ export async function saveSettings(settings: Settings): Promise<void> {
   await chrome.storage.local.set({ [KEY]: settings });
 }
 
-/** True once at least one provider key is set. */
-export const canSummarize = (s: Settings): boolean => Object.values(s.keys).some((k) => k.trim());
+/** True once at least one provider key is set (or a no-key provider is primary). */
+export const canSummarize = (s: Settings): boolean =>
+  Object.values(s.keys).some((k) => k.trim()) || NO_KEY.has(s.provider);
 
 /** True once notes can be pushed to GitHub. */
 export const canPush = (s: Settings): boolean =>
@@ -66,10 +69,10 @@ export function buildCandidates(s: Settings): ProviderCandidate[] {
     return Number(FREE.has(b)) - Number(FREE.has(a));
   });
   return order
-    .filter((id) => s.keys[id]?.trim())
+    .filter((id) => s.keys[id]?.trim() || (NO_KEY.has(id) && id === s.provider))
     .map((id) => ({
       provider: id,
-      apiKey: s.keys[id]!.trim(),
+      apiKey: s.keys[id]?.trim() || (NO_KEY.has(id) ? "ollama" : ""),
       model: id === s.provider ? s.model || undefined : undefined,
     }));
 }
