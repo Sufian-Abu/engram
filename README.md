@@ -1,60 +1,72 @@
 # Engram
 
-**Your AI conversations, remembered.**
+Your AI conversations, remembered.
 
-Engram captures your conversations across Claude, ChatGPT, and Gemini, distills each into a structured, portable Markdown knowledge base, and syncs it to your own **private GitHub repo** and **Google Drive**. When access is revoked, history disappears, or you switch models, your accumulated context is safe — and every entry ends with a paste-ready **resume prompt** to continue the work in *any* model.
+I kept losing context. A long Claude thread where we'd worked out an architecture, a ChatGPT chat full of debugging history, the project setup I'd explained five times across different tools — all of it locked inside someone else's product, one policy change or deleted-history click away from being gone. Models don't remember you between sessions, and the part that actually matters — the back-and-forth, the decisions, the project context — lives in walled gardens you don't control.
 
-> An *engram* is the trace a memory leaves behind. That's what this does for your chats.
+Engram fixes that. It takes your conversations out of Claude, ChatGPT, and the API, distills each one into a clean Markdown note, and stores those notes in a private Git repo (and optionally Google Drive) that *you* own. Switch models, get rate-limited, lose access, start a fresh chat — your accumulated context is still there, searchable and yours. Every note even ends with a paste-ready prompt to resume the work in any model.
 
-## Why
+> An *engram* is the physical trace a memory leaves in the brain. This does the same thing for your chats.
 
-LLMs are stateless — they don't store your knowledge. The real asset is your **conversation history and project context**, which lives locked inside each provider's walled garden. Bans, revoked access, deleted history, and context resets can wipe it out. Engram makes that asset yours: owned, versioned, searchable, and model-agnostic.
+## The problem it solves
+
+LLMs are stateless. The provider stores your *messages* so the UI can show them, but they don't store your *knowledge*, and you can't easily get it out in a form that's useful later. The real asset isn't the model — it's the transcript: what you were building, what you decided and why, what's still open. Today that asset is:
+
+- **Trapped** — exportable at best as a giant JSON blob, not something you can read, search, or hand to another model.
+- **Fragile** — bans, revoked access, deleted history, and silent retention changes can erase it.
+- **Siloed** — your Claude history can't see your ChatGPT history, and neither survives you switching tools.
+
+Engram turns that transcript into something durable: owned, versioned in Git, greppable, and model-agnostic.
 
 ## How it works
 
 ```
-capture (extension / export)  ->  summarize (LLM, your key)  ->  organize  ->  sync
-                                                                              ├─ GitHub (private, versioned)
-                                                                              └─ Google Drive (rclone mirror)
+capture  ──►  summarize  ──►  organize  ──►  sync
+(extension /   (an LLM with    (date / project   (private Git repo
+ API proxy /    your own key)   / topic layout)    + Google Drive)
+ export file)
 ```
 
-KB layout is date / project / topic, all at once:
+**Capture.** Getting the conversation out is the hard part, and it differs by surface:
 
+- *Web* (claude.ai, chatgpt.com) — a browser extension that hooks the page's own network calls and reads the conversation JSON the site already fetched. It intercepts `fetch`; it does **not** scrape the DOM, so a UI redesign doesn't break it.
+- *API* — a tiny local proxy you point your client's base URL at. It forwards your request untouched (your key passes straight through, never stored) and keeps a copy of the exchange. Because every chat request already includes the full message history, the capture is complete.
+- *Files* — point it at a ChatGPT data export or a Claude Code transcript and it parses those directly.
+
+**Summarize.** Each conversation goes through an LLM — *your* key, your choice of provider — that returns a structured note: title, project, topics, a short summary, the key facts, the decisions and their rationale, the open questions, and a resume prompt. The model is forced to emit valid JSON (Anthropic tool-use / OpenAI function-calling), so there's no flaky text parsing.
+
+**Organize.** Notes are written to `kb/YYYY/MM/<project>/<slug>-<hash>.md` — so the path alone tells you when and what, and topics in the front-matter make it searchable in Obsidian, `grep`, or any script. The `<hash>` is derived from the source conversation id, which keeps re-runs idempotent and ties each note back to its origin.
+
+**Sync.** `engram sync` commits the knowledge base to a private Git repo (your durable, versioned backup) and mirrors it to Google Drive via rclone. Both steps are best-effort and independent — a Drive hiccup never blocks the Git push.
+
+A finished note looks like this:
+
+````markdown
+---
+title: Designing a rate limiter
+date: 2026-06-20
+project: engram
+provider: claude
+topics: [redis, sliding-window, api]
+source_id: 11111111-2222-3333-4444-555555555555
+---
+
+# Designing a rate limiter
+
+Worked out a sliding-window rate limiter for an Express API...
+
+## Decisions
+- Sliding window in Redis, updated atomically with a Lua script — avoids the race a naive counter has.
+
+## Open questions / next steps
+- How to handle clients behind shared NAT.
+
+## Resume prompt
+```text
+We were designing a rate limiter for an Express API. We chose a sliding window
+in Redis with a Lua script for atomic updates... pick up from here.
 ```
-kb/2026/06/engram/building-engram-knowledge-base-tool-444fbe21.md
-   └YYYY └MM └project └slug + source id
-```
-
-Each file has YAML front-matter (`date`, `project`, `topics`) for search, a human-readable summary / key facts / decisions / open questions, and a fenced resume prompt.
-
-## Status
-
-| Phase | What | State |
-|---|---|---|
-| **P1** | Core engine + CLI (parse → summarize → organize → render → sync) | ✅ done |
-| **P2** | Browser extension — capture Claude & ChatGPT by network interception | ✅ done (Gemini pending) |
-| **P3** | API wrapper / proxy (capture API-made conversations) | ⬜ next |
-| **P4** | Desktop apps via local HTTPS proxy | ⬜ |
-
-### Packages
-
-- **`@engram/core`** — parse (Claude Code JSONL, ChatGPT export, Engram-normalized) → summarize (BYOK, forced-JSON via tool-use / function-calling) → organize → render.
-- **`@engram/cli`** — `engram ingest <path>` and `engram sync`.
-- **`@engram/extension`** — Manifest V3 extension that captures claude.ai & chatgpt.com conversations via `fetch` interception and exports them in Engram's normalized format. `npm run build -w @engram/extension`, then load `packages/extension/dist/` unpacked.
-
-## Providers (BYOK — bring your own key)
-
-Set **one** key in `.env`. Several providers are free:
-
-| Provider | Cost | Default model | Key |
-|---|---|---|---|
-| Groq | **free** | `llama-3.3-70b-versatile` | `GROQ_API_KEY` |
-| Google Gemini | **free tier** | `gemini-2.0-flash` | `GEMINI_API_KEY` |
-| OpenRouter | **free models** | `…llama-3.3-70b-instruct:free` | `OPENROUTER_API_KEY` |
-| Anthropic | paid | `claude-sonnet-4-6` | `ANTHROPIC_API_KEY` |
-| OpenAI (ChatGPT) | paid | `gpt-4o-mini` | `OPENAI_API_KEY` |
-
-Engram auto-picks the first provider whose key is set; force one with `ENGRAM_PROVIDER`.
+````
 
 ## Quick start
 
@@ -62,45 +74,73 @@ Engram auto-picks the first provider whose key is set; force one with `ENGRAM_PR
 npm install
 npm run build
 
-cp .env.example .env        # add a provider key (Groq is free)
+cp .env.example .env     # add one provider key — Groq is free (see below)
 
-# Generate KB entries from exported / sample chats:
-npm run ingest -- samples/
-
-# Commit + push the KB to your private repo, then mirror to Drive:
-npm run sync
+npm run ingest -- samples/   # turn the sample chat into a KB note
+npm run sync                 # commit + push the KB, mirror to Drive
 ```
 
-### Your knowledge base lives in its *own* repo
+### Bring your own key (one is enough, several are free)
 
-Keep the KB out of this code repo. Create a **separate private repo** (e.g. `engram-kb`), clone it somewhere, and point Engram at it:
+Engram never ships a key — you use your own, so there's no cost or trust handed to me, and your conversations only ever touch your provider and your storage. It picks the first key it finds; override with `ENGRAM_PROVIDER`.
+
+| Provider | Cost | Default model | Env var |
+| --- | --- | --- | --- |
+| Groq | free | `llama-3.3-70b-versatile` | `GROQ_API_KEY` |
+| Google Gemini | free tier | `gemini-2.0-flash` | `GEMINI_API_KEY` |
+| OpenRouter | free models | `meta-llama/llama-3.3-70b-instruct:free` | `OPENROUTER_API_KEY` |
+| Anthropic | paid | `claude-sonnet-4-6` | `ANTHROPIC_API_KEY` |
+| OpenAI | paid | `gpt-4o-mini` | `OPENAI_API_KEY` |
+
+### Capturing real conversations
+
+Browser (Claude + ChatGPT):
+
+```bash
+npm run build -w @engram/extension
+# chrome://extensions → Developer mode → Load unpacked → packages/extension/dist
+# open a conversation; the toolbar badge counts captures; popup → Export JSON
+npm run ingest -- ~/Downloads/engram-claude-conversations.json
+```
+
+API (point your client at the proxy; your key passes through):
+
+```bash
+npm run proxy
+# ANTHROPIC_BASE_URL=http://localhost:8788   OPENAI_BASE_URL=http://localhost:8788/v1
+npm run ingest -- ./.engram/api
+```
+
+## Where your data lives
+
+The knowledge base belongs in its **own** private repo, separate from this code. Clone it, point Engram at it, and your notes version and push independently:
 
 ```bash
 git clone git@github.com:<you>/engram-kb.git ~/engram-kb
-export ENGRAM_KB_DIR=~/engram-kb      # or set it in .env
-
-npm run ingest -- <your-exported-chats>
-npm run sync                          # commits + pushes to engram-kb, mirrors to Drive
+export ENGRAM_KB_DIR=~/engram-kb
+npm run ingest -- <your-chats>
+npm run sync
 ```
 
-`engram sync` runs Git inside `ENGRAM_KB_DIR`, so the KB versions and pushes independently of the Engram source. (This repo gitignores `*.md` for exactly this reason — your conversations never land here.)
+Nothing leaves your machine except the summarize call to your chosen provider and the sync to your own Git/Drive. This source repo deliberately gitignores `*.md` so a stray conversation can never be committed here.
 
-### Configuration (`.env`)
+## Project layout
 
-| Var | Purpose |
-|---|---|
-| `GROQ_API_KEY` / `GEMINI_API_KEY` / `OPENROUTER_API_KEY` / `ANTHROPIC_API_KEY` / `OPENAI_API_KEY` | BYOK key for the summarize step (set one) |
-| `ENGRAM_PROVIDER` | Force a provider: `anthropic` \| `openai` \| `groq` \| `gemini` \| `openrouter` |
-| `ENGRAM_MODEL` | Override the summarizer model (defaults per provider) |
-| `ENGRAM_KB_DIR` | KB output dir (default `./kb`) |
-| `ENGRAM_DRIVE_REMOTE` | rclone remote for Drive (optional; set up via `rclone config`) |
+It's a small TypeScript monorepo:
 
-## Development
+- **`@engram/core`** — the engine: parsers, the summarizer, the file layout, the Markdown renderer.
+- **`@engram/cli`** — `engram ingest <path>` and `engram sync`.
+- **`@engram/extension`** — the Manifest V3 browser extension (Claude + ChatGPT).
+- **`@engram/proxy`** — the API capture proxy.
 
 ```bash
-npm run build     # type-check + compile all packages
-npm test          # Vitest suite (pure helpers + provider parsers)
+npm run build    # type-check + compile everything
+npm test         # the test suite (parsers, summarizer, capture, wiring)
 ```
+
+## Status
+
+The engine, CLI, browser extension (Claude and ChatGPT), and API proxy all work today, end to end. Gemini capture is not done yet — gemini.google.com moves conversation data over an obfuscated `batchexecute` RPC rather than a clean JSON endpoint, so it needs a different, more brittle approach than the others; I'd rather ship it right than ship it flaky. Next up: publishing the extension to the Chrome Web Store, and desktop-app capture via a local HTTPS proxy.
 
 ## License
 
