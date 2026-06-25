@@ -11,4 +11,12 @@ export interface WebProvider {
   matchUrl(url: string): boolean;
   /** Parse the raw API response, or null if it isn't a usable conversation. */
   parse(payload: unknown): Conversation | null;
+  /**
+   * True if this URL is a "send message" request. After its reply finishes we
+   * re-fetch the conversation, so a brand-new chat is captured live without a
+   * manual reload.
+   */
+  matchSendUrl?(url: string): boolean;
+  /** Given a send URL, the conversation-fetch URL to re-pull after the reply. */
+  conversationUrlFromSend?(url: string): string | null;
 }

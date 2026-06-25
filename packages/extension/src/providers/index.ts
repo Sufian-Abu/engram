@@ -19,6 +19,18 @@ export function matchProvider(url: string): ProviderId | null {
   return PROVIDERS.find((p) => p.matchUrl(url))?.id ?? null;
 }
 
+/** If this URL is a "send message" request, the provider + conversation URL to
+ *  re-fetch once the reply finishes (for live capture of new chats). */
+export function matchSend(url: string): { provider: ProviderId; conversationUrl: string } | null {
+  for (const p of PROVIDERS) {
+    if (p.matchSendUrl?.(url)) {
+      const conversationUrl = p.conversationUrlFromSend?.(url);
+      if (conversationUrl) return { provider: p.id, conversationUrl };
+    }
+  }
+  return null;
+}
+
 /** Parse a captured payload with the named provider's parser. */
 export function parseFor(provider: ProviderId, payload: unknown): Conversation | null {
   return byId.get(provider)?.parse(payload) ?? null;

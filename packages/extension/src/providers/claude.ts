@@ -28,7 +28,18 @@ export function parseClaudeWeb(raw: unknown): Conversation | null {
 
 /** A single-conversation fetch (has a trailing uuid); the list endpoint doesn't. */
 export function matchClaudeUrl(url: string): boolean {
-  return /\/chat_conversations\/[0-9a-f-]{36}/i.test(url);
+  return /\/chat_conversations\/[0-9a-f-]{36}/i.test(url) && !/\/completion\b/i.test(url);
+}
+
+/** The streaming "send message" endpoint: .../chat_conversations/<uuid>/completion */
+export function matchClaudeSendUrl(url: string): boolean {
+  return /\/chat_conversations\/[0-9a-f-]{36}\/completion/i.test(url);
+}
+
+/** Derive the conversation GET URL from a send URL, to re-pull after the reply. */
+export function claudeConversationUrlFromSend(url: string): string | null {
+  const m = url.match(/^(.*\/chat_conversations\/[0-9a-f-]{36})\/completion/i);
+  return m ? `${m[1]}?tree=True&rendering_mode=messages&render_all_tools=true` : null;
 }
 
 function toMessage(raw: unknown): Message | null {
@@ -62,4 +73,6 @@ export const claudeProvider: WebProvider = {
   id: "claude",
   matchUrl: matchClaudeUrl,
   parse: parseClaudeWeb,
+  matchSendUrl: matchClaudeSendUrl,
+  conversationUrlFromSend: claudeConversationUrlFromSend,
 };

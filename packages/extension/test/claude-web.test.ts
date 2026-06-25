@@ -1,5 +1,11 @@
 import { describe, it, expect } from "vitest";
-import { parseClaudeWeb, matchClaudeUrl } from "../src/providers/claude.js";
+import {
+  parseClaudeWeb,
+  matchClaudeUrl,
+  matchClaudeSendUrl,
+  claudeConversationUrlFromSend,
+} from "../src/providers/claude.js";
+import { matchSend } from "../src/providers/index.js";
 import { upsertById } from "../src/merge.js";
 import { matchProvider, parseFor } from "../src/providers/index.js";
 import type { Conversation } from "../src/types.js";
@@ -52,11 +58,33 @@ describe("parseClaudeWeb", () => {
 });
 
 describe("matchClaudeUrl", () => {
+  const base = "https://claude.ai/api/organizations/org/chat_conversations/11111111-2222-3333-4444-555555555555";
   it("matches a single-conversation fetch (has a uuid)", () => {
-    expect(matchClaudeUrl("https://claude.ai/api/organizations/org/chat_conversations/11111111-2222-3333-4444-555555555555?tree=True")).toBe(true);
+    expect(matchClaudeUrl(`${base}?tree=True`)).toBe(true);
   });
   it("does not match the conversation-list endpoint (no uuid)", () => {
     expect(matchClaudeUrl("https://claude.ai/api/organizations/org/chat_conversations")).toBe(false);
+  });
+  it("does not treat the send (completion) endpoint as a conversation fetch", () => {
+    expect(matchClaudeUrl(`${base}/completion`)).toBe(false);
+  });
+});
+
+describe("claude live-capture (send -> re-fetch)", () => {
+  const send = "https://claude.ai/api/organizations/org/chat_conversations/11111111-2222-3333-4444-555555555555/completion";
+  it("recognizes the send endpoint", () => {
+    expect(matchClaudeSendUrl(send)).toBe(true);
+    expect(matchClaudeSendUrl(send.replace("/completion", ""))).toBe(false);
+  });
+  it("derives the conversation fetch URL from the send URL", () => {
+    const url = claudeConversationUrlFromSend(send);
+    expect(url).toContain("/chat_conversations/11111111-2222-3333-4444-555555555555?");
+    expect(url).not.toContain("/completion");
+  });
+  it("matchSend routes the send URL to claude + a conversation URL", () => {
+    const m = matchSend(send);
+    expect(m?.provider).toBe("claude");
+    expect(m?.conversationUrl).toContain("chat_conversations/");
   });
 });
 
