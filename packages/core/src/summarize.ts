@@ -4,7 +4,10 @@ import { requestKbDraft } from "./llm-client.js";
 import { KB_TOOL_NAME, type KbEntryDraft } from "./kb-schema.js";
 
 const DEFAULT_PROVIDER_ID = "anthropic";
-const DEFAULT_MAX_TRANSCRIPT_CHARS = 60_000;
+// ~8k input tokens — fits Groq's free-tier 12k tokens/minute budget (plus the
+// 2k output reservation) so most chats summarize in one call. Bigger chats get
+// truncated and retried smaller.
+const DEFAULT_MAX_TRANSCRIPT_CHARS = 32_000;
 const MAX_TOPICS = 8;
 
 export interface SummarizeOptions {
@@ -32,17 +35,42 @@ export const summarizeConversation = async (
   const provider = getProviderById(opts.provider ?? DEFAULT_PROVIDER_ID);
   const model = opts.model ?? provider.defaultModel;
   const date = conversationDate(conv);
-  const transcript = renderTranscript(conv, opts.maxChars ?? DEFAULT_MAX_TRANSCRIPT_CHARS);
 
-  const draft = await requestKbDraft({
-    provider,
-    model,
-    apiKey: opts.apiKey,
-    prompt: buildSummarizePrompt(conv, transcript, date),
-  });
-
-  return toKbEntry(draft, conv, date);
+  // Long chats can exceed a provider's per-request / per-minute token budget
+  // (e.g. Groq's free tier). On a "too large" error, halve the transcript and
+  // retry — a truncated summary beats none.
+  let maxChars = opts.maxChars ?? DEFAULT_MAX_TRANSCRIPT_CHARS;
+  let lastError: unknown;
+  for (let attempt = 0; attempt < MAX_SHRINK_ATTEMPTS; attempt++) {
+    const transcript = renderTranscript(conv, maxChars);
+    try {
+      const draft = await requestKbDraft({
+        provider,
+        model,
+        apiKey: opts.apiKey,
+        prompt: buildSummarizePrompt(conv, transcript, date),
+      });
+      return toKbEntry(draft, conv, date);
+    } catch (e) {
+      lastError = e;
+      if (isTooLargeError(e) && maxChars > MIN_TRANSCRIPT_CHARS) {
+        maxChars = Math.floor(maxChars / 2);
+        continue;
+      }
+      throw e;
+    }
+  }
+  throw lastError;
 };
+
+const MAX_SHRINK_ATTEMPTS = 5;
+const MIN_TRANSCRIPT_CHARS = 4000;
+
+/** A request-too-large / token-limit error worth retrying with less transcript. */
+const isTooLargeError = (e: unknown): boolean =>
+  /too large|reduce your message|request too large|413|rate_limit_exceeded|context length|maximum context/i.test(
+    String((e as any)?.message ?? e),
+  );
 
 /** Pick the conversation's date (YYYY-MM-DD), preferring when it was updated. */
 export const conversationDate = (conv: Conversation): string =>
