@@ -6,6 +6,7 @@ import { ENGRAM_SOURCE, type CapturedMessage } from "./types.js";
  *   2. Relay the captures the interceptor postMessages back to the service
  *      worker (content scripts can talk to chrome.runtime; page scripts can't).
  */
+console.debug("[engram] content script active on", location.host);
 injectInterceptor();
 
 window.addEventListener("message", (event) => {

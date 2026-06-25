@@ -16,6 +16,7 @@ window.fetch = async function patchedFetch(...args): Promise<Response> {
     const url = requestUrl(args[0]);
     const provider = url ? matchProvider(url) : null;
     if (provider) {
+      console.debug("[engram] intercepted", provider, "conversation fetch:", url);
       // Clone first — reading the body of the original would starve the page.
       response
         .clone()
