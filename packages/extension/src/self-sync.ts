@@ -46,7 +46,11 @@ export async function syncConversation(conv: Conversation): Promise<SyncOutcome>
       provider: settings.provider,
       model: settings.model || undefined,
     });
-  } catch {
+    await chrome.storage.local.remove("lastError");
+  } catch (e: any) {
+    const detail = String(e?.message ?? e);
+    console.error("[engram] summarize failed:", detail);
+    await chrome.storage.local.set({ lastError: detail });
     return "summarize-failed";
   }
   entry.sourceHash = hash;
@@ -61,7 +65,12 @@ export async function syncConversation(conv: Conversation): Promise<SyncOutcome>
   if (canPush(settings)) {
     const verb = prev ? "update" : "add";
     const result = await pushFile(settings, repoPath, markdown, `engram: ${verb} ${entry.title}`);
-    if (!result.ok) return "push-failed";
+    if (!result.ok) {
+      const detail = `GitHub ${result.status}: ${result.error ?? ""}`.trim();
+      console.error("[engram] push failed:", detail);
+      await chrome.storage.local.set({ lastError: detail });
+      return "push-failed";
+    }
   }
 
   synced[conv.id] = { hash, path: repoPath };

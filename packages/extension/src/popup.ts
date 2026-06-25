@@ -70,7 +70,16 @@ async function renderStatus(): Promise<void> {
     error: ["off", "○ Summarize failed — check your key in Settings"],
   };
   const [cls, text] = states[mode ?? "stored"] ?? fallback;
-  els.status.innerHTML = `<span class="${cls}">${text}</span>`;
+  let html = `<span class="${cls}">${text}</span>`;
+  if (mode === "error" || mode === "summarized") {
+    const { lastError } = (await chrome.storage.local.get("lastError")) as { lastError?: string };
+    if (lastError) html += `<div class="err">${escapeHtml(lastError)}</div>`;
+  }
+  els.status.innerHTML = html;
+}
+
+function escapeHtml(s: string): string {
+  return s.replace(/[&<>]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;" })[c]!);
 }
 
 /** Download all captures as a JSON array — exactly what `engram ingest` reads. */
