@@ -94,12 +94,27 @@ Engram never ships a key — you use your own, so there's no cost or trust hande
 
 ### Capturing real conversations
 
-Browser (Claude + ChatGPT):
+**The browser extension** (Claude + ChatGPT). It's not on the Chrome Web Store — it installs unpacked, which is fine for a dev tool and keeps you in control of exactly what's running. Two ways to get it:
+
+*Build from source:*
 
 ```bash
-npm run build -w @engram/extension
-# chrome://extensions → Developer mode → Load unpacked → packages/extension/dist
-# open a conversation; the toolbar badge counts captures; popup → Export JSON
+git clone https://github.com/Sufian-Abu/engram.git
+cd engram && npm install
+npm run build -w @engram/extension     # outputs packages/extension/dist
+```
+
+*Or grab a prebuilt zip* from the [Releases page](https://github.com/Sufian-Abu/engram/releases) and unzip it.
+
+Then load it in any Chromium browser (Chrome, Edge, Brave, Arc):
+
+```text
+chrome://extensions  →  enable Developer mode  →  Load unpacked  →  pick the dist/ (or unzipped) folder
+```
+
+Open a conversation on claude.ai or chatgpt.com — the toolbar badge counts what it captures. Click the icon → **Export JSON**, then:
+
+```bash
 npm run ingest -- ~/Downloads/engram-claude-conversations.json
 ```
 
@@ -142,6 +157,21 @@ npm test         # the test suite (parsers, summarizer, capture, wiring)
 
 The engine, CLI, browser extension (Claude and ChatGPT), and API proxy all work today, end to end. Gemini capture is not done yet — gemini.google.com moves conversation data over an obfuscated `batchexecute` RPC rather than a clean JSON endpoint, so it needs a different, more brittle approach than the others; I'd rather ship it right than ship it flaky. Next up: publishing the extension to the Chrome Web Store, and desktop-app capture via a local HTTPS proxy.
 
+## Contributing
+
+Issues and pull requests are welcome. The fastest way in:
+
+```bash
+git clone https://github.com/Sufian-Abu/engram.git
+cd engram && npm install
+npm run build && npm test
+```
+
+Good first contributions: a new provider parser (the extension's `WebProvider`
+interface or a `@engram/core` parser is a self-contained ~50 lines), Gemini
+capture, or wiring the popup to ingest without the manual export step. CI runs
+build, type-check, and tests on every PR.
+
 ## License
 
-MIT
+MIT — see [LICENSE](LICENSE). It's open source: clone it, run it, fork it, ship it.

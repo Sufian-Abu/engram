@@ -3,6 +3,10 @@
   "private": true,
   "version": "0.1.0",
   "description": "Engram — your AI conversations, remembered. Capture, summarize, and own your LLM chats as a portable knowledge base.",
+  "license": "MIT",
+  "author": "Sufian Abu",
+  "repository": { "type": "git", "url": "https://github.com/Sufian-Abu/engram.git" },
+  "homepage": "https://github.com/Sufian-Abu/engram#readme",
   "workspaces": [
     "packages/*"
   ],
