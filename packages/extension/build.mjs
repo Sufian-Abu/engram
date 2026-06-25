@@ -10,6 +10,7 @@ const options = {
     "src/background.ts",
     "src/content.ts",
     "src/interceptor.ts",
+    "src/gemini-capture.ts",
     "src/popup.ts",
     "src/options.ts",
   ],

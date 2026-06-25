@@ -8,6 +8,7 @@
     "https://claude.ai/*",
     "https://chatgpt.com/*",
     "https://chat.openai.com/*",
+    "https://gemini.google.com/*",
     "http://localhost:8765/*",
     "https://api.groq.com/*",
     "https://api.openai.com/*",
@@ -25,6 +26,11 @@
       "matches": ["https://claude.ai/*", "https://chatgpt.com/*", "https://chat.openai.com/*"],
       "js": ["content.js"],
       "run_at": "document_start"
+    },
+    {
+      "matches": ["https://gemini.google.com/*"],
+      "js": ["gemini-capture.js"],
+      "run_at": "document_idle"
     }
   ],
   "web_accessible_resources": [

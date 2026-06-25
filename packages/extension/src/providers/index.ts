@@ -2,15 +2,15 @@ import type { Conversation, ProviderId } from "../types.js";
 import type { WebProvider } from "./types.js";
 import { claudeProvider } from "./claude.js";
 import { chatgptProvider } from "./chatgpt.js";
+import { geminiProvider } from "./gemini.js";
 
 /**
  * Registered web providers. Claude and ChatGPT expose clean JSON conversation
- * endpoints we can intercept. Gemini is intentionally absent: gemini.google.com
- * transports conversation data over obfuscated `batchexecute` RPC (nested,
- * index-addressed arrays), which would need fragile reverse-engineering — a
- * separate effort, not the same fetch-and-parse pattern.
+ * endpoints we intercept. Gemini transports its data over obfuscated
+ * `batchexecute` RPC, so it's captured from the DOM instead (see
+ * gemini-capture.ts) — its parser just validates the already-normalized payload.
  */
-export const PROVIDERS: WebProvider[] = [claudeProvider, chatgptProvider];
+export const PROVIDERS: WebProvider[] = [claudeProvider, chatgptProvider, geminiProvider];
 
 const byId = new Map(PROVIDERS.map((p) => [p.id, p]));
 
