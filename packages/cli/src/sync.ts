@@ -50,6 +50,26 @@ const syncToGit = (cfg: Config): void => {
     process.stdout.write("    git remote add origin git@github.com:<you>/engram.git && git push -u origin main\n");
     return;
   }
+
+  // Reconcile with the remote first so a push from another machine (or the
+  // GitHub-init commit) doesn't reject our push. KB notes rarely collide, so a
+  // rebase is almost always clean; on a real conflict we abort and report it.
+  if (hasUpstream(cfg.kbDir)) {
+    try {
+      git(["pull", "--rebase", "--autostash"], cfg.kbDir);
+    } catch (e) {
+      try {
+        git(["rebase", "--abort"], cfg.kbDir);
+      } catch {
+        /* nothing to abort */
+      }
+      process.stderr.write(
+        `  ! couldn't rebase on the remote — resolve manually in ${cfg.kbDir}: ${firstLine(e)}\n`,
+      );
+      return;
+    }
+  }
+
   try {
     git(["push"], cfg.kbDir);
     process.stdout.write("Pushed to remote.\n");
@@ -101,6 +121,16 @@ const hasStagedChanges = (cwd: string): boolean => {
 const hasRemote = (cwd: string): boolean => {
   try {
     return git(["remote"], cwd).trim() !== "";
+  } catch {
+    return false;
+  }
+};
+
+/** True if the current branch tracks an upstream (so pull --rebase is valid). */
+const hasUpstream = (cwd: string): boolean => {
+  try {
+    git(["rev-parse", "--abbrev-ref", "--symbolic-full-name", "@{u}"], cwd);
+    return true;
   } catch {
     return false;
   }
