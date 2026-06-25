@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <style>
+      :root { color-scheme: light dark; }
+      body { width: 320px; margin: 0; padding: 14px; font: 13px/1.4 system-ui, sans-serif; }
+      h1 { font-size: 14px; margin: 0 0 8px; }
+      .count { color: #6b4cff; font-weight: 600; }
+      ul { list-style: none; margin: 8px 0; padding: 0; max-height: 220px; overflow: auto; }
+      li { padding: 6px 8px; border-radius: 6px; background: rgba(127,127,127,0.1); margin-bottom: 4px; }
+      .title { font-weight: 500; }
+      .meta { color: #888; font-size: 11px; }
+      .row { display: flex; gap: 8px; margin-top: 10px; }
+      button { flex: 1; padding: 8px; border: 0; border-radius: 6px; cursor: pointer; font-weight: 600; }
+      .primary { background: #6b4cff; color: #fff; }
+      .ghost { background: rgba(127,127,127,0.15); }
+      button:disabled { opacity: 0.4; cursor: default; }
+      .empty { color: #888; padding: 10px 0; }
+    </style>
+  </head>
+  <body>
+    <h1>Engram — <span class="count" id="count">0</span> captured</h1>
+    <ul id="list"></ul>
+    <div class="row">
+      <button class="primary" id="export">Export JSON</button>
+      <button class="ghost" id="clear">Clear</button>
+    </div>
+    <script src="popup.js"></script>
+  </body>
+</html>

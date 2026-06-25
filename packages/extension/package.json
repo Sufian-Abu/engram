@@ -1,0 +1,17 @@
+{
+  "name": "@engram/extension",
+  "version": "0.1.0",
+  "description": "Engram browser extension: capture LLM conversations (Claude first) via network interception into Engram's normalized format.",
+  "type": "module",
+  "private": true,
+  "scripts": {
+    "build": "node build.mjs",
+    "watch": "node build.mjs --watch",
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "@types/chrome": "^0.0.270",
+    "esbuild": "^0.24.0"
+  },
+  "license": "MIT"
+}
