@@ -28,5 +28,12 @@ export {
   KB_JSON_SCHEMA,
   type KbEntryDraft,
 } from "./kb-schema.js";
-export { entryPath, slug } from "./organize.js";
+export {
+  entryPath,
+  slug,
+  shortHash,
+  conversationHash,
+  findEntryByConversationId,
+  readSourceHash,
+} from "./organize.js";
 export { renderEntry } from "./render.js";

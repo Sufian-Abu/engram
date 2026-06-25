@@ -10,7 +10,7 @@ const DAEMON_URL = "http://localhost:8765/capture";
 
 export interface DaemonResult {
   ok: boolean;
-  written?: number;
+  changed?: number;
   skipped?: number;
 }
 
@@ -22,8 +22,8 @@ export async function sendToDaemon(conversation: Conversation): Promise<DaemonRe
       body: JSON.stringify(conversation),
     });
     if (!res.ok) return { ok: false };
-    const data = (await res.json()) as { written?: number; skipped?: number };
-    return { ok: true, written: data.written, skipped: data.skipped };
+    const data = (await res.json()) as { changed?: number; skipped?: number };
+    return { ok: true, changed: data.changed, skipped: data.skipped };
   } catch {
     // Daemon not running — caller keeps the capture in chrome.storage.
     return { ok: false };

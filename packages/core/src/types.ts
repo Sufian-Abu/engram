@@ -54,4 +54,10 @@ export interface KBEntry {
   /** Provenance. */
   provider: Provider;
   sourceConversationId: string;
+  /**
+   * Hash of the source conversation's messages. Lets a re-capture tell whether
+   * the conversation actually changed (re-summarize + update) or is identical
+   * (skip — nothing to push).
+   */
+  sourceHash?: string;
 }

@@ -25,6 +25,7 @@ export const ingestCommand = async (args: string[]): Promise<void> => {
   process.stdout.write(`Parsed ${conversations.length} conversation(s) from ${files.length} file(s).\n`);
 
   let written = 0;
+  let updated = 0;
   let skipped = 0;
   for (const conv of conversations) {
     const outcome = await writeKbEntry(
@@ -34,10 +35,13 @@ export const ingestCommand = async (args: string[]): Promise<void> => {
       (l) => process.stderr.write(`  ! ${l}\n`),
     );
     if (outcome === "written") written++;
+    else if (outcome === "updated") updated++;
     else if (outcome === "skipped") skipped++;
   }
 
-  process.stdout.write(`\nDone. ${written} written, ${skipped} skipped. KB at ${cfg.kbDir}\n`);
+  process.stdout.write(
+    `\nDone. ${written} written, ${updated} updated, ${skipped} unchanged. KB at ${cfg.kbDir}\n`,
+  );
 };
 
 /** Parse one file into conversations, logging and swallowing parse errors. */

@@ -14,6 +14,7 @@ export const renderEntry = (entry: KBEntry): string => {
     `provider: ${entry.provider}`,
     `topics: [${entry.topics.map(yaml).join(", ")}]`,
     `source_id: ${yaml(entry.sourceConversationId)}`,
+    ...(entry.sourceHash ? [`source_hash: ${entry.sourceHash}`] : []),
     "---",
   ].join("\n");
 

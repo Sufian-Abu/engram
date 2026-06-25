@@ -52,15 +52,15 @@ async function handle(
   if (req.method === "POST" && (req.url ?? "").startsWith("/capture")) {
     try {
       const conversations = parseAny(await readJson(req));
-      let written = 0;
+      let changed = 0;
       let skipped = 0;
       for (const conv of conversations) {
         const outcome = await writeKbEntry(conv, cfg, (l) => process.stdout.write(`  ${l}\n`));
-        if (outcome === "written") written++;
+        if (outcome === "written" || outcome === "updated") changed++;
         else if (outcome === "skipped") skipped++;
       }
-      if (written > 0) scheduleSync();
-      return sendJson(res, 200, { written, skipped });
+      if (changed > 0) scheduleSync();
+      return sendJson(res, 200, { changed, skipped });
     } catch (e: any) {
       return sendJson(res, 400, { error: e.message });
     }
