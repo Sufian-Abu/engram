@@ -71,12 +71,19 @@ in Redis with a Lua script for atomic updates... pick up from here.
 ## Quick start
 
 ```bash
-npm install
-npm run build
+git clone https://github.com/Sufian-Abu/engram.git
+cd engram && npm install
+npm run setup        # creates .env + a local KB repo, builds the extension
+# paste a free Groq key into .env (https://console.groq.com/keys), then:
+npm start            # runs the auto-capture daemon
+```
 
-cp .env.example .env     # add one provider key — Groq is free (see below)
+Then load `packages/extension/dist` at `chrome://extensions` (Developer mode → Load unpacked), and open a conversation on claude.ai or chatgpt.com — it's captured, summarized, and saved automatically.
 
-npm run ingest -- samples/   # turn the sample chat into a KB note
+Prefer to do it by hand? The pieces are all scriptable:
+
+```bash
+npm run ingest -- samples/   # turn a chat (file/dir/export) into a KB note
 npm run sync                 # commit + push the KB, mirror to Drive
 ```
 

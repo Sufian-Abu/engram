@@ -11,6 +11,8 @@
     "packages/*"
   ],
   "scripts": {
+    "setup": "node scripts/setup.mjs",
+    "start": "tsx packages/cli/src/index.ts serve",
     "build": "tsc --build",
     "test": "vitest run",
     "test:watch": "vitest",
