@@ -9,8 +9,7 @@ dist/
 # Local raw capture vault (never commit raw conversations by default)
 .engram/raw/
 
-# Keep all markdown out of this code repo (KB entries are private conversation
-# summaries and belong in your separate private KB repo). README is the
-# one exception so the project stays documented.
-*.md
-!README.md
+# Keep generated KB notes (private conversation summaries) out of the code repo
+# — they belong in your separate private KB repo. Project docs (README,
+# SECURITY, CONTRIBUTING, …) are fine to commit.
+/kb/

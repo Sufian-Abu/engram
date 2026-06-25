@@ -158,7 +158,16 @@ npm run ingest -- <your-chats>
 npm run sync
 ```
 
-Nothing leaves your machine except the summarize call to your chosen provider and the sync to your own Git/Drive. This source repo deliberately gitignores `*.md` so a stray conversation can never be committed here.
+Nothing leaves your machine except the summarize call to your chosen provider and the sync to your own Git/Drive. This source repo gitignores `kb/` so a stray conversation can never be committed here. See [SECURITY.md](SECURITY.md) for credential handling (and use a **fine-grained, repo-scoped** GitHub token, not a classic `repo` one).
+
+## How capture works, and its limits
+
+Capture reads the conversation JSON the site already fetches (Claude, ChatGPT) or, for Gemini, reads the page DOM. A few things worth knowing:
+
+- **It captures as you chat.** When you send a message, the extension waits for the reply to finish and re-pulls the conversation, so new chats are saved without reloading. If a capture ever seems missing, reloading the tab always forces it.
+- **Unofficial interfaces.** These are undocumented endpoints/DOM that providers can change at any time, which may break capture until the selectors/URLs are updated. Engram only ever *reads* conversations you open — it never sends messages or touches your account.
+- **Gemini is best-effort.** It's DOM-based and the newest; if it misses turns, that's the selectors needing a tune-up — please open an issue with a sample.
+- **Free-tier limits.** Free provider keys have token/minute caps. Engram truncates oversized chats and fails over to your other configured providers, but a large backlog can still hit limits briefly — it recovers within a minute.
 
 ## Project layout
 
@@ -176,7 +185,7 @@ npm test         # the test suite (parsers, summarizer, capture, wiring)
 
 ## Status
 
-The engine, CLI, browser extension (Claude and ChatGPT), and API proxy all work today, end to end. Gemini capture is not done yet — gemini.google.com moves conversation data over an obfuscated `batchexecute` RPC rather than a clean JSON endpoint, so it needs a different, more brittle approach than the others; I'd rather ship it right than ship it flaky. Next up: publishing the extension to the Chrome Web Store, and desktop-app capture via a local HTTPS proxy.
+The engine, CLI, browser extension, and API proxy all work today, end to end. Claude and ChatGPT capture via network interception; Gemini capture is newer and DOM-based (best-effort — see the caveats above). Next up: publishing the extension to the Chrome Web Store, and desktop-app capture via a local HTTPS proxy.
 
 ## Contributing
 
