@@ -27,14 +27,34 @@ kb/2026/06/engram/building-engram-knowledge-base-tool-444fbe21.md
 
 Each file has YAML front-matter (`date`, `project`, `topics`) for search, a human-readable summary / key facts / decisions / open questions, and a fenced resume prompt.
 
-## Status — Phase 1 (core engine)
+## Status
 
-Done and runnable today:
+| Phase | What | State |
+|---|---|---|
+| **P1** | Core engine + CLI (parse → summarize → organize → render → sync) | ✅ done |
+| **P2** | Browser extension — capture Claude & ChatGPT by network interception | ✅ done (Gemini pending) |
+| **P3** | API wrapper / proxy (capture API-made conversations) | ⬜ next |
+| **P4** | Desktop apps via local HTTPS proxy | ⬜ |
 
-- **`@engram/core`** — parse (ChatGPT export + Engram-normalized JSON), summarize (Anthropic, BYOK, forced-JSON via tool-use), organize, render.
-- **`@engram/cli`** — `engram ingest` and `engram sync`.
+### Packages
 
-Roadmap: **P2** browser extension (network interception; Claude → ChatGPT → Gemini; ship to Chrome Web Store) · **P3** API wrapper · **P4** desktop apps via local HTTPS proxy.
+- **`@engram/core`** — parse (Claude Code JSONL, ChatGPT export, Engram-normalized) → summarize (BYOK, forced-JSON via tool-use / function-calling) → organize → render.
+- **`@engram/cli`** — `engram ingest <path>` and `engram sync`.
+- **`@engram/extension`** — Manifest V3 extension that captures claude.ai & chatgpt.com conversations via `fetch` interception and exports them in Engram's normalized format. `npm run build -w @engram/extension`, then load `packages/extension/dist/` unpacked.
+
+## Providers (BYOK — bring your own key)
+
+Set **one** key in `.env`. Several providers are free:
+
+| Provider | Cost | Default model | Key |
+|---|---|---|---|
+| Groq | **free** | `llama-3.3-70b-versatile` | `GROQ_API_KEY` |
+| Google Gemini | **free tier** | `gemini-2.0-flash` | `GEMINI_API_KEY` |
+| OpenRouter | **free models** | `…llama-3.3-70b-instruct:free` | `OPENROUTER_API_KEY` |
+| Anthropic | paid | `claude-sonnet-4-6` | `ANTHROPIC_API_KEY` |
+| OpenAI (ChatGPT) | paid | `gpt-4o-mini` | `OPENAI_API_KEY` |
+
+Engram auto-picks the first provider whose key is set; force one with `ENGRAM_PROVIDER`.
 
 ## Quick start
 
@@ -42,23 +62,45 @@ Roadmap: **P2** browser extension (network interception; Claude → ChatGPT → 
 npm install
 npm run build
 
-cp .env.example .env        # add your ANTHROPIC_API_KEY (BYOK)
+cp .env.example .env        # add a provider key (Groq is free)
 
 # Generate KB entries from exported / sample chats:
 npm run ingest -- samples/
 
-# Commit + push to your private repo, then mirror to Drive:
+# Commit + push the KB to your private repo, then mirror to Drive:
 npm run sync
 ```
+
+### Your knowledge base lives in its *own* repo
+
+Keep the KB out of this code repo. Create a **separate private repo** (e.g. `engram-kb`), clone it somewhere, and point Engram at it:
+
+```bash
+git clone git@github.com:<you>/engram-kb.git ~/engram-kb
+export ENGRAM_KB_DIR=~/engram-kb      # or set it in .env
+
+npm run ingest -- <your-exported-chats>
+npm run sync                          # commits + pushes to engram-kb, mirrors to Drive
+```
+
+`engram sync` runs Git inside `ENGRAM_KB_DIR`, so the KB versions and pushes independently of the Engram source. (This repo gitignores `*.md` for exactly this reason — your conversations never land here.)
 
 ### Configuration (`.env`)
 
 | Var | Purpose |
 |---|---|
-| `ANTHROPIC_API_KEY` | Your key for the summarize step (required for `ingest`) |
-| `ENGRAM_MODEL` | Summarizer model (default `claude-sonnet-4-6`) |
+| `GROQ_API_KEY` / `GEMINI_API_KEY` / `OPENROUTER_API_KEY` / `ANTHROPIC_API_KEY` / `OPENAI_API_KEY` | BYOK key for the summarize step (set one) |
+| `ENGRAM_PROVIDER` | Force a provider: `anthropic` \| `openai` \| `groq` \| `gemini` \| `openrouter` |
+| `ENGRAM_MODEL` | Override the summarizer model (defaults per provider) |
 | `ENGRAM_KB_DIR` | KB output dir (default `./kb`) |
 | `ENGRAM_DRIVE_REMOTE` | rclone remote for Drive (optional; set up via `rclone config`) |
+
+## Development
+
+```bash
+npm run build     # type-check + compile all packages
+npm test          # Vitest suite (pure helpers + provider parsers)
+```
 
 ## License
 

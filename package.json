@@ -12,7 +12,8 @@
     "test:watch": "vitest",
     "ingest": "tsx packages/cli/src/index.ts ingest",
     "sync": "tsx packages/cli/src/index.ts sync",
-    "engram": "tsx packages/cli/src/index.ts"
+    "engram": "tsx packages/cli/src/index.ts",
+    "proxy": "tsx packages/proxy/src/index.ts"
   },
   "devDependencies": {
     "@types/node": "^20.11.0",

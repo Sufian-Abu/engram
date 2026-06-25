@@ -1,0 +1,16 @@
+{
+  "name": "@engram/proxy",
+  "version": "0.1.0",
+  "description": "Engram API proxy: point your Anthropic/OpenAI client's base URL here to capture API conversations into Engram's normalized format.",
+  "type": "module",
+  "bin": {
+    "engram-proxy": "./dist/index.js"
+  },
+  "scripts": {
+    "build": "tsc --build"
+  },
+  "dependencies": {
+    "@engram/core": "0.1.0"
+  },
+  "license": "MIT"
+}
