@@ -80,6 +80,10 @@ npm start            # runs the auto-capture daemon
 
 Then load `packages/extension/dist` at `chrome://extensions` (Developer mode → Load unpacked), and open a conversation on claude.ai or chatgpt.com — it's captured, summarized, and saved automatically.
 
+### No terminal at all (self-contained extension)
+
+You don't actually need the daemon. Open the extension's **Settings** (the popup's ⚙, or right-click → Options), paste a free provider key, and optionally a GitHub token + `owner/repo`. From then on the extension summarizes each conversation **in the browser** and pushes the note straight to your private repo — no clone, no `npm`, no daemon. The daemon above is just the local-first alternative for people who'd rather keep keys out of the browser.
+
 Prefer to do it by hand? The pieces are all scriptable:
 
 ```bash

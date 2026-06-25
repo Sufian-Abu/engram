@@ -5,10 +5,16 @@ const STORAGE_KEY = "conversations";
 const els = {
   count: document.getElementById("count") as HTMLElement,
   status: document.getElementById("status") as HTMLElement,
+  settings: document.getElementById("settings") as HTMLAnchorElement,
   list: document.getElementById("list") as HTMLUListElement,
   exportBtn: document.getElementById("export") as HTMLButtonElement,
   clearBtn: document.getElementById("clear") as HTMLButtonElement,
 };
+
+els.settings.addEventListener("click", (e) => {
+  e.preventDefault();
+  chrome.runtime.openOptionsPage();
+});
 
 void render();
 
@@ -52,12 +58,19 @@ async function render(): Promise<void> {
   }
 }
 
-/** Reflect whether the local `engram serve` daemon is auto-syncing captures. */
+/** Reflect how captures are being handled (set by the service worker). */
 async function renderStatus(): Promise<void> {
-  const { daemonConnected } = await chrome.storage.local.get("daemonConnected");
-  els.status.innerHTML = daemonConnected
-    ? `<span class="on">● Auto-sync on</span> — captures ingest &amp; push automatically`
-    : `<span class="off">○ Auto-sync off</span> — run <code>engram serve</code>, or Export JSON below`;
+  const { mode } = (await chrome.storage.local.get("mode")) as { mode?: string };
+  const fallback: [string, string] = ["off", "○ Captured — add a key in Settings to summarize automatically"];
+  const states: Record<string, [string, string]> = {
+    synced: ["on", "● Summarizing &amp; pushing to GitHub automatically"],
+    summarized: ["on", "● Summarizing — add a GitHub token in Settings to push"],
+    daemon: ["on", "● Auto-syncing via the local daemon"],
+    stored: fallback,
+    error: ["off", "○ Summarize failed — check your key in Settings"],
+  };
+  const [cls, text] = states[mode ?? "stored"] ?? fallback;
+  els.status.innerHTML = `<span class="${cls}">${text}</span>`;
 }
 
 /** Download all captures as a JSON array — exactly what `engram ingest` reads. */

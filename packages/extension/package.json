@@ -11,6 +11,9 @@
     "icons": "node generate-icons.mjs",
     "typecheck": "tsc --noEmit"
   },
+  "dependencies": {
+    "@engram/core": "0.1.0"
+  },
   "devDependencies": {
     "@types/chrome": "^0.0.270",
     "esbuild": "^0.24.0"

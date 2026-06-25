@@ -11,6 +11,7 @@ const options = {
     "src/content.ts",
     "src/interceptor.ts",
     "src/popup.ts",
+    "src/options.ts",
   ],
   outdir: "dist",
   bundle: true,
@@ -23,6 +24,7 @@ const copyStatic = async () => {
   await mkdir("dist", { recursive: true });
   await copyFile("manifest.json", "dist/manifest.json");
   await copyFile("src/popup.html", "dist/popup.html");
+  await copyFile("src/options.html", "dist/options.html");
   await cp("icons", "dist/icons", { recursive: true });
 };
 

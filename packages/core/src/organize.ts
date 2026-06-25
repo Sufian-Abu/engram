@@ -1,6 +1,7 @@
 import fs from "node:fs";
 import path from "node:path";
-import type { Conversation, KBEntry } from "./types.js";
+import type { KBEntry } from "./types.js";
+import { shortHash, slug } from "./util.js";
 
 /**
  * Compute the on-disk location for a KB entry:
@@ -17,24 +18,6 @@ export const entryPath = (entry: KBEntry, kbDir: string): string => {
   // `||` (not `??`) so an empty segment from a malformed date also falls back.
   return path.join(kbDir, year || "unknown", month || "00", entry.project, file);
 };
-
-/** 8-hex-char FNV-1a hash, stable across runs for idempotent filenames. */
-export const shortHash = (s: string): string => {
-  let h = 0x811c9dc5;
-  for (let i = 0; i < s.length; i++) {
-    h ^= s.charCodeAt(i);
-    h = Math.imul(h, 0x01000193);
-  }
-  return (h >>> 0).toString(16).padStart(8, "0");
-};
-
-/**
- * A content fingerprint of a conversation. Two captures of the same chat hash
- * equal only if the messages are unchanged — so a re-capture can tell an actual
- * update from a no-op.
- */
-export const conversationHash = (conv: Conversation): string =>
-  shortHash(conv.messages.map((m) => `${m.role}:${m.content}`).join("\n"));
 
 /**
  * Find an existing note for this conversation, regardless of its title/project
@@ -71,10 +54,3 @@ export const readSourceHash = (file: string): string | null => {
     return null;
   }
 };
-
-export const slug = (s: string): string =>
-  s
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/^-+|-+$/g, "")
-    .slice(0, 60) || "untitled";

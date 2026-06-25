@@ -2,13 +2,8 @@ import { describe, it, expect, beforeAll } from "vitest";
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
-import {
-  entryPath,
-  slug,
-  conversationHash,
-  findEntryByConversationId,
-  readSourceHash,
-} from "../src/organize.js";
+import { entryPath, findEntryByConversationId, readSourceHash } from "../src/organize.js";
+import { slug, conversationHash } from "../src/util.js";
 import { renderEntry } from "../src/render.js";
 import type { Conversation, KBEntry } from "../src/types.js";
 
