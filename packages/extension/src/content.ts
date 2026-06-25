@@ -12,9 +12,17 @@ window.addEventListener("message", (event) => {
   if (event.source !== window) return;
   const data = event.data as Partial<CapturedMessage> | undefined;
   if (!data || data.source !== ENGRAM_SOURCE || data.kind !== "conversation") return;
-  chrome.runtime.sendMessage(data).catch(() => {
-    /* service worker asleep/reloading: the next capture will retry */
-  });
+  // After the extension reloads/updates, this old content script lingers with a
+  // dead chrome.runtime; sendMessage then throws *synchronously* ("Extension
+  // context invalidated"), so a .catch() alone isn't enough. Guard + try/catch.
+  if (!chrome.runtime?.id) return;
+  try {
+    chrome.runtime.sendMessage(data).catch(() => {
+      /* service worker asleep: the next capture retries */
+    });
+  } catch {
+    /* context invalidated mid-call — the reloaded page's script takes over */
+  }
 });
 
 function injectInterceptor(): void {
