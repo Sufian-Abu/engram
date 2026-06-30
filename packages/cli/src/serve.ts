@@ -26,7 +26,7 @@ export const serveCommand = async (args: string[]): Promise<void> => {
     void handle(req, res, cfg, scheduleSync);
   });
 
-  server.listen(port, () => {
+  server.listen(port, "127.0.0.1", () => {
     process.stdout.write(
       `engram serve on http://localhost:${port}\n` +
         `  provider: ${cfg.provider!.label} (${cfg.model})\n` +
@@ -42,7 +42,16 @@ async function handle(
   cfg: Config,
   scheduleSync: () => void,
 ): Promise<void> {
-  setCors(res);
+  // Only the extension (or a local tool) may drive the daemon — never a web
+  // page. Otherwise any site you visit could POST a conversation and make the
+  // daemon spend your API key, write KB notes, and push to your repo. A page's
+  // fetch always carries an http(s) Origin; we reject those, and reject any
+  // non-loopback Host (anti DNS-rebinding). See SECURITY.md.
+  if (!isLoopbackHost(req) || isWebOrigin(req)) {
+    res.writeHead(403).end();
+    return;
+  }
+  setCors(req, res);
   if (req.method === "OPTIONS") return void res.writeHead(204).end();
 
   if (req.method === "GET" && req.url === "/health") {
@@ -106,12 +115,28 @@ function sendJson(res: http.ServerResponse, status: number, body: unknown): void
   res.end(JSON.stringify(body));
 }
 
-// The extension's origin is chrome-extension://<id>; allow any so we don't pin
-// to a specific unpacked id. The daemon only listens on localhost.
-function setCors(res: http.ServerResponse): void {
-  res.setHeader("access-control-allow-origin", "*");
+// Echo only an extension origin back — never reflect a web page's origin.
+// (The extension can read responses anyway via host_permissions; this just
+// avoids handing CORS access to anything else.)
+function setCors(req: http.IncomingMessage, res: http.ServerResponse): void {
+  const origin = req.headers.origin;
+  if (typeof origin === "string" && origin.startsWith("chrome-extension://")) {
+    res.setHeader("access-control-allow-origin", origin);
+  }
   res.setHeader("access-control-allow-methods", "POST, GET, OPTIONS");
   res.setHeader("access-control-allow-headers", "content-type");
+}
+
+/** Reject anything whose Host isn't loopback (defends against DNS rebinding). */
+function isLoopbackHost(req: http.IncomingMessage): boolean {
+  const host = (req.headers.host ?? "").split(":")[0]!.toLowerCase();
+  return host === "" || host === "localhost" || host === "127.0.0.1" || host === "[::1]" || host === "::1";
+}
+
+/** A browser page's fetch always carries an http(s) Origin; the extension doesn't. */
+function isWebOrigin(req: http.IncomingMessage): boolean {
+  const origin = req.headers.origin;
+  return typeof origin === "string" && /^https?:/i.test(origin);
 }
 
 function flag(args: string[], name: string): string | undefined {

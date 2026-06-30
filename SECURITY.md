@@ -24,6 +24,10 @@ That token can only read/write the one private repo, so a leak can't touch anyth
 - KB notes → **only** your own GitHub repo and/or Google Drive.
 - Nothing goes to the project author or any analytics/telemetry. There is none.
 
+## The local daemon
+
+`engram serve` listens on `127.0.0.1` only and accepts requests **only** from the browser extension or local tools — never from a web page. It rejects any request carrying a browser (`http(s)://`) `Origin`, and rejects any non-loopback `Host` (so DNS-rebinding can't reach it). This prevents a site you visit from driving the daemon to spend your API key, write notes, or push to your repo. The API proxy similarly pins each forwarded request to its provider's origin, so a crafted path can't redirect your key to another host.
+
 ## Unofficial provider endpoints
 
 Web capture works by reading the conversation JSON that claude.ai / chatgpt.com already fetch (and, for Gemini, by reading the page DOM). These are **unofficial, undocumented interfaces** that can change at any time and break capture. Engram never automates sending messages or any account action — it only reads conversations you open.

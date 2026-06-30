@@ -29,9 +29,19 @@ export function createProxyServer(opts: ProxyOptions): http.Server {
       return;
     }
 
+    // Resolve the target safely and confirm it stays on the route's upstream
+    // origin. We forward the user's API key, so a crafted path (e.g. "//evil"
+    // or "/../@host") must never redirect it to another host.
+    const target = resolveUpstream(route.upstreamBase, path);
+    if (!target) {
+      res.writeHead(400, { "content-type": "text/plain" });
+      res.end(`engram-proxy: refusing to forward off-origin path ${path}\n`);
+      return;
+    }
+
     let upstream: Response;
     try {
-      upstream = await fetch(route.upstreamBase + path, {
+      upstream = await fetch(target, {
         method: req.method,
         headers: forwardableHeaders(req.headers),
         body: body.length ? body : undefined,
@@ -88,6 +98,17 @@ function readBody(req: http.IncomingMessage): Promise<Buffer> {
     req.on("end", () => resolve(Buffer.concat(chunks)));
     req.on("error", reject);
   });
+}
+
+/** Join base + path, returning the URL only if it stays on the base's origin. */
+function resolveUpstream(upstreamBase: string, path: string): string | null {
+  try {
+    const base = new URL(upstreamBase);
+    const url = new URL(path.replace(/^\/+/, "/"), base);
+    return url.origin === base.origin ? url.toString() : null;
+  } catch {
+    return null;
+  }
 }
 
 function forwardableHeaders(headers: http.IncomingHttpHeaders): Record<string, string> {
