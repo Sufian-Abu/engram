@@ -23,7 +23,7 @@ export {
   type ProviderSpec,
   type ApiFlavor,
 } from "./providers.js";
-export { requestKbDraft, type StructuredRequest } from "./llm-client.js";
+export { requestKbDraft, extractJson, type StructuredRequest } from "./llm-client.js";
 export {
   KB_TOOL_NAME,
   KB_TOOL_DESCRIPTION,
