@@ -90,7 +90,13 @@ const syncToDrive = (cfg: Config): void => {
   }
   const destination = `${cfg.driveRemote}:${cfg.drivePath}`;
   try {
-    execFileSync("rclone", ["sync", cfg.kbDir, destination, "--fast-list"], { stdio: "inherit" });
+    // Mirror only the notes — never the local git repo, dotfiles, or OS cruft.
+    // --delete-excluded also removes any such files a previous sync uploaded.
+    execFileSync(
+      "rclone",
+      ["sync", cfg.kbDir, destination, "--fast-list", "--exclude", ".git/**", "--exclude", ".*", "--delete-excluded", "--rmdirs"],
+      { stdio: "inherit" },
+    );
     process.stdout.write(`Mirrored to ${destination}\n`);
   } catch (e) {
     process.stderr.write(`  ! rclone sync failed: ${firstLine(e)}\n`);
