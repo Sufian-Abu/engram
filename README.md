@@ -186,24 +186,72 @@ npm run build    # type-check + compile everything
 npm test         # the test suite (parsers, summarizer, capture, wiring)
 ```
 
+## Extending Engram
+
+Everything flows through one contract — the normalized `Conversation`:
+
+```ts
+interface Conversation {
+  id: string;                 // stable id; one note per conversation
+  provider: "claude" | "chatgpt" | "gemini";
+  title?: string;
+  messages: { role: "user" | "assistant" | "system" | "tool"; content: string; timestamp?: string }[];
+}
+```
+
+A **capture source** produces one; the **summarizer** consumes one. Because the two sides only agree on this shape, each is easy to extend on its own. There are three extension points.
+
+### Add a summarizer provider
+
+All providers live in one registry: [`packages/core/src/providers.ts`](packages/core/src/providers.ts). Most speak the OpenAI chat-completions shape, so adding one is a few lines:
+
+```ts
+const mistral: ProviderSpec = {
+  id: "mistral",
+  label: "Mistral",
+  flavor: "openai",            // "openai" | "anthropic"
+  baseUrl: "https://api.mistral.ai/v1/chat/completions",
+  defaultModel: "mistral-large-latest",
+  keyEnv: "MISTRAL_API_KEY",
+  free: false,
+  maxInputChars: 80_000,       // how much transcript to send (context-window aware)
+};
+// …then add it to ALL_PROVIDERS
+```
+
+That's all — provider **failover**, the **JSON-mode fallback** (for models without tool support), the CLI's key chain, and the extension's Options dropdown all pick it up automatically. Only if the provider has a genuinely different request/response shape do you add a `flavor` branch in [`llm-client.ts`](packages/core/src/llm-client.ts).
+
+### Add a web-capture source
+
+Web providers implement one small interface ([`providers/types.ts`](packages/extension/src/providers/types.ts)):
+
+```ts
+interface WebProvider {
+  id: ProviderId;
+  matchUrl(url: string): boolean;                 // is this a conversation fetch?
+  parse(payload: unknown): Conversation | null;   // provider JSON → normalized
+  matchSendUrl?(url: string): boolean;            // optional: capture live as you chat
+  conversationUrlFromSend?(url: string): string | null;
+}
+```
+
+Write `parse` defensively (the response schema is the provider's, not yours), drop the file in [`packages/extension/src/providers/`](packages/extension/src/providers/), and register it in `providers/index.ts`. The interceptor and service worker are provider-agnostic — they route by your `matchUrl`. See [`claude.ts`](packages/extension/src/providers/claude.ts) for a full network-capture example, or [`gemini.ts`](packages/extension/src/providers/gemini.ts) for the DOM-capture variant.
+
+### Add a file parser
+
+Exports (ChatGPT data export, Claude Code transcripts, …) are parsed in [`packages/core/src/parsers/`](packages/core/src/parsers/). Add a `parseX(raw): Conversation | Conversation[]` plus a detector in `parseAny` ([`parsers/index.ts`](packages/core/src/parsers/index.ts)), and `engram ingest` reads the new format for free.
+
+Each piece is small and unit-tested in isolation, so a new provider or parser has an obvious place to add a test alongside it.
+
 ## Status
 
 The engine, CLI, browser extension, and API proxy all work today, end to end. Claude and ChatGPT capture via network interception; Gemini capture is newer and DOM-based (best-effort — see the caveats above). Next up: publishing the extension to the Chrome Web Store, and desktop-app capture via a local HTTPS proxy.
 
 ## Contributing
 
-Issues and pull requests are welcome. The fastest way in:
+Issues and pull requests are welcome — see [Extending Engram](#extending-engram) for the three places most contributions land. CI runs build, type-check, and tests on every PR; please add a test alongside new code and keep it `npm run build && npm test`-clean.
 
-```bash
-git clone https://github.com/Sufian-Abu/engram.git
-cd engram && npm install
-npm run build && npm test
-```
-
-Good first contributions: a new provider parser (the extension's `WebProvider`
-interface or a `@engram/core` parser is a self-contained ~50 lines), Gemini
-capture, or wiring the popup to ingest without the manual export step. CI runs
-build, type-check, and tests on every PR.
+Good first issues: tune the **Gemini** DOM selectors, add a **provider** or **file parser**, or wire the popup to ingest without the manual export. For anything touching credentials, read [SECURITY.md](SECURITY.md) first.
 
 ## License
 
