@@ -20,12 +20,42 @@ Engram turns that transcript into something durable: owned, versioned in Git, gr
 
 ## How it works
 
+Four stages — capture the conversation, summarize it with your own key, organize the note on disk, and sync it to storage you own:
+
+```mermaid
+flowchart LR
+    EXT["🧩 Browser extension<br/><small>claude.ai · chatgpt.com · gemini</small>"]
+    PROXY["🔌 API proxy<br/><small>localhost base-URL</small>"]
+    FILES["📄 File exports<br/><small>ChatGPT export · Claude Code</small>"]
+
+    CONV{{"📝 Normalized<br/>Conversation"}}
+
+    PROV["🤖 Summarize · your key<br/><small>Groq · Gemini · OpenRouter<br/>Anthropic · OpenAI · Ollama (local)</small><br/>↳ failover + JSON fallback"]
+
+    NOTE["🗂️ Markdown note<br/><small>kb/YYYY/MM/project/slug.md<br/>+ paste-ready resume prompt</small>"]
+
+    GIT["🔒 Private GitHub repo"]
+    DRIVE["☁️ Google Drive<br/><small>rclone</small>"]
+
+    EXT & PROXY & FILES -->|① capture| CONV
+    CONV -->|② summarize| PROV
+    PROV -->|③ organize + render| NOTE
+    NOTE -->|④ sync| GIT & DRIVE
+
+    classDef capture fill:#6b4cff,stroke:#4a32c0,color:#fff,stroke-width:2px
+    classDef contract fill:#fff7e6,stroke:#e8821a,color:#7a4a00,stroke-width:3px
+    classDef summarize fill:#1a9d4a,stroke:#137a39,color:#fff,stroke-width:2px
+    classDef organize fill:#e8821a,stroke:#b8650f,color:#fff,stroke-width:2px
+    classDef sync fill:#0d8bd9,stroke:#0a6ba8,color:#fff,stroke-width:2px
+
+    class EXT,PROXY,FILES capture
+    class CONV contract
+    class PROV summarize
+    class NOTE organize
+    class GIT,DRIVE sync
 ```
-capture  ──►  summarize  ──►  organize  ──►  sync
-(extension /   (an LLM with    (date / project   (private Git repo
- API proxy /    your own key)   / topic layout)    + Google Drive)
- export file)
-```
+
+Everything funnels through one shape — the **normalized `Conversation`** (the cream box) — which is why any capture source pairs with any provider. Two ways to run it: the **self-contained extension** does all four stages in the browser, or the local **`engram serve` daemon** does them while the extension just feeds it captures.
 
 **Capture.** Getting the conversation out is the hard part, and it differs by surface:
 
