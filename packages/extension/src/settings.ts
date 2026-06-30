@@ -1,4 +1,4 @@
-import type { ProviderCandidate } from "@engram/core/browser";
+import { orderedForFailover, getProviderById, type ProviderCandidate } from "@engram/core/browser";
 
 /**
  * User settings for self-contained mode, stored in chrome.storage.local. Keys
@@ -21,11 +21,16 @@ export interface Settings {
   githubBranch: string;
 }
 
-/** Provider ids shown in Options, free ones first (also the fallback order). */
-export const PROVIDER_ORDER = ["groq", "gemini", "openrouter", "anthropic", "openai", "ollama"] as const;
-const FREE = new Set(["groq", "gemini", "openrouter", "ollama"]);
-/** Providers that need no API key (a local server). */
-export const NO_KEY = new Set(["ollama"]);
+/** Providers with a key field in Options (Ollama is keyless, shown as a note). */
+export const PROVIDER_ORDER = ["groq", "gemini", "openrouter", "anthropic", "openai"] as const;
+
+const isNoKeyProvider = (id: string): boolean => {
+  try {
+    return Boolean(getProviderById(id).noKeyRequired);
+  } catch {
+    return false;
+  }
+};
 
 export const DEFAULT_SETTINGS: Settings = {
   provider: "groq",
@@ -55,7 +60,7 @@ export async function saveSettings(settings: Settings): Promise<void> {
 
 /** True once at least one provider key is set (or a no-key provider is primary). */
 export const canSummarize = (s: Settings): boolean =>
-  Object.values(s.keys).some((k) => k.trim()) || NO_KEY.has(s.provider);
+  Object.values(s.keys).some((k) => k.trim()) || isNoKeyProvider(s.provider);
 
 /** True once notes can be pushed to GitHub. */
 export const canPush = (s: Settings): boolean =>
@@ -63,16 +68,11 @@ export const canPush = (s: Settings): boolean =>
 
 /** Failover order: primary first, then other keyed providers (free before paid). */
 export function buildCandidates(s: Settings): ProviderCandidate[] {
-  const order = [...PROVIDER_ORDER].sort((a, b) => {
-    if (a === s.provider) return -1;
-    if (b === s.provider) return 1;
-    return Number(FREE.has(b)) - Number(FREE.has(a));
-  });
-  return order
-    .filter((id) => s.keys[id]?.trim() || (NO_KEY.has(id) && id === s.provider))
-    .map((id) => ({
-      provider: id,
-      apiKey: s.keys[id]?.trim() || (NO_KEY.has(id) ? "ollama" : ""),
-      model: id === s.provider ? s.model || undefined : undefined,
+  return orderedForFailover(s.provider)
+    .filter((p) => s.keys[p.id]?.trim() || (p.noKeyRequired && p.id === s.provider))
+    .map((p) => ({
+      provider: p.id,
+      apiKey: s.keys[p.id]?.trim() || (p.noKeyRequired ? "ollama" : ""),
+      model: p.id === s.provider ? s.model || undefined : undefined,
     }));
 }

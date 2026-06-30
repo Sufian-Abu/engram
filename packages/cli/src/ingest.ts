@@ -1,7 +1,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import { parseAny, type Conversation } from "@engram/core";
-import { loadConfig } from "./config.js";
+import { loadConfig, MISSING_KEY_MESSAGE } from "./config.js";
 import { writeKbEntry } from "./writer.js";
 
 /**
@@ -73,9 +73,3 @@ const collectJsonFiles = (target: string): string[] => {
 };
 
 const isIngestable = (file: string): boolean => file.endsWith(".json") || file.endsWith(".jsonl");
-
-const MISSING_KEY_MESSAGE =
-  "No provider API key found. Copy .env.example to .env and set one of:\n" +
-  "  GROQ_API_KEY (free)  GEMINI_API_KEY (free)  OPENROUTER_API_KEY (free)\n" +
-  "  ANTHROPIC_API_KEY    OPENAI_API_KEY\n" +
-  "Optionally set ENGRAM_PROVIDER to force which one is used.";

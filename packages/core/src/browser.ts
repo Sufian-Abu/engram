@@ -15,8 +15,8 @@ export {
   type ProviderCandidate,
 } from "./summarize.js";
 export { renderEntry } from "./render.js";
-export { slug, shortHash, conversationHash } from "./util.js";
-export { ALL_PROVIDERS, getProviderById, type ProviderSpec, type ApiFlavor } from "./providers.js";
+export { slug, shortHash, conversationHash, isObject, asString, normalizeRole, blocksToText } from "./util.js";
+export { ALL_PROVIDERS, getProviderById, orderedForFailover, type ProviderSpec, type ApiFlavor } from "./providers.js";
 export { requestKbDraft, type StructuredRequest } from "./llm-client.js";
 export { type KbEntryDraft } from "./kb-schema.js";
 export type { Conversation, Message, Role, Provider, KBEntry } from "./types.js";

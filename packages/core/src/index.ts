@@ -20,6 +20,7 @@ export {
   ALL_PROVIDERS,
   getProviderById,
   resolveProviderFromEnv,
+  orderedForFailover,
   type ProviderSpec,
   type ApiFlavor,
 } from "./providers.js";
@@ -31,5 +32,5 @@ export {
   type KbEntryDraft,
 } from "./kb-schema.js";
 export { entryPath, findEntryByConversationId, readSourceHash } from "./organize.js";
-export { slug, shortHash, conversationHash } from "./util.js";
+export { slug, shortHash, conversationHash, isObject, asString, normalizeRole, blocksToText } from "./util.js";
 export { renderEntry } from "./render.js";

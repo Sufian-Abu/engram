@@ -6,6 +6,7 @@ import type { Conversation } from "./types.js";
  * fails and we fall back to chrome.storage (the popup's Export JSON still works),
  * so nothing is ever lost.
  */
+// Port must match the CLI's default in packages/cli/src/serve.ts (DEFAULT_PORT).
 const DAEMON_URL = "http://localhost:8765/capture";
 
 export interface DaemonResult {

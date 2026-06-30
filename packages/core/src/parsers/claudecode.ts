@@ -1,4 +1,5 @@
 import type { Conversation, Message, Role } from "../types.js";
+import { shortHash } from "../util.js";
 
 /**
  * Parse a Claude Code CLI session transcript. The transcript is JSONL: one
@@ -37,7 +38,7 @@ export function parseClaudeCodeTranscript(events: any[]): Conversation {
   }
 
   return {
-    id: sessionId ? `claude-code-${sessionId}` : `claude-code-${hash(JSON.stringify(events).slice(0, 2000))}`,
+    id: sessionId ? `claude-code-${sessionId}` : `claude-code-${shortHash(JSON.stringify(events).slice(0, 2000))}`,
     provider: "claude-code",
     title,
     createdAt: firstTs,
@@ -76,11 +77,3 @@ function clean(s: string): string {
     .trim();
 }
 
-function hash(s: string): string {
-  let h = 0x811c9dc5;
-  for (let i = 0; i < s.length; i++) {
-    h ^= s.charCodeAt(i);
-    h = Math.imul(h, 0x01000193);
-  }
-  return (h >>> 0).toString(16);
-}

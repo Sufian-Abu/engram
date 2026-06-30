@@ -1,4 +1,5 @@
-import type { Conversation } from "../types.js";
+import { isObject, asString, normalizeRole } from "@engram/core/browser";
+import type { Conversation, Message } from "../types.js";
 import type { WebProvider } from "./types.js";
 
 /**
@@ -8,16 +9,23 @@ import type { WebProvider } from "./types.js";
  * sends it through as the payload, so `parse` here just validates it.
  */
 export function parseGeminiWeb(payload: unknown): Conversation | null {
-  if (typeof payload !== "object" || payload === null) return null;
-  const c = payload as Partial<Conversation>;
-  if (!c.id || !Array.isArray(c.messages) || c.messages.length === 0) return null;
+  if (!isObject(payload) || !asString(payload.id) || !Array.isArray(payload.messages)) return null;
+
+  // Validate each turn (the DOM scraper is trusted-ish, but fail safe on junk).
+  const messages: Message[] = payload.messages
+    .map((m): Message | null => {
+      if (!isObject(m)) return null;
+      const content = asString(m.content).trim();
+      return content ? { role: normalizeRole(m.role), content } : null;
+    })
+    .filter((m): m is Message => m !== null);
+  if (messages.length === 0) return null;
+
   return {
-    id: c.id,
+    id: asString(payload.id),
     provider: "gemini",
-    title: typeof c.title === "string" ? c.title : undefined,
-    messages: c.messages,
-    createdAt: c.createdAt,
-    updatedAt: c.updatedAt,
+    title: asString(payload.title) || undefined,
+    messages,
   };
 }
 

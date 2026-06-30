@@ -1,3 +1,4 @@
+import { isObject, asString, blocksToText } from "@engram/core/browser";
 import type { Conversation, Message, Role } from "../types.js";
 import type { WebProvider } from "./types.js";
 
@@ -9,7 +10,7 @@ import type { WebProvider } from "./types.js";
  */
 export function parseClaudeWeb(raw: unknown): Conversation | null {
   if (!isObject(raw)) return null;
-  const id = str(raw.uuid);
+  const id = asString(raw.uuid);
   const rawMessages = raw.chat_messages;
   if (!id || !Array.isArray(rawMessages)) return null;
 
@@ -19,9 +20,9 @@ export function parseClaudeWeb(raw: unknown): Conversation | null {
   return {
     id,
     provider: "claude",
-    title: str(raw.name) || undefined,
-    createdAt: str(raw.created_at) || undefined,
-    updatedAt: str(raw.updated_at) || undefined,
+    title: asString(raw.name) || undefined,
+    createdAt: asString(raw.created_at) || undefined,
+    updatedAt: asString(raw.updated_at) || undefined,
     messages,
   };
 }
@@ -45,28 +46,10 @@ export function claudeConversationUrlFromSend(url: string): string | null {
 function toMessage(raw: unknown): Message | null {
   if (!isObject(raw)) return null;
   const role: Role = raw.sender === "assistant" ? "assistant" : "user";
-  const content = messageText(raw).trim();
+  // Claude messages carry a flat `text` and/or structured content blocks.
+  const content = (asString(raw.text) || blocksToText(raw.content)).trim();
   if (!content) return null;
-  return { role, content, timestamp: str(raw.created_at) || undefined };
-}
-
-/** Prefer the flat `text`; otherwise join the structured content blocks. */
-function messageText(raw: Record<string, unknown>): string {
-  const flat = str(raw.text);
-  if (flat) return flat;
-  if (!Array.isArray(raw.content)) return "";
-  return raw.content
-    .map((block) => (isObject(block) ? str(block.text) : ""))
-    .filter(Boolean)
-    .join("\n\n");
-}
-
-function isObject(x: unknown): x is Record<string, unknown> {
-  return typeof x === "object" && x !== null;
-}
-
-function str(x: unknown): string {
-  return typeof x === "string" ? x : "";
+  return { role, content, timestamp: asString(raw.created_at) || undefined };
 }
 
 export const claudeProvider: WebProvider = {

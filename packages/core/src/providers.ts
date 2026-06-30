@@ -124,6 +124,19 @@ export const getProviderById = (id: string): ProviderSpec => {
 };
 
 /**
+ * Providers ordered for summarize failover: the primary first, then the rest
+ * with free providers ahead of paid ones — so a rate-limited free key hands off
+ * to another free key before spending on a paid one. Shared by the CLI and the
+ * extension; each maps its own keys onto this order.
+ */
+export const orderedForFailover = (primaryId: string | undefined): ProviderSpec[] =>
+  [...ALL_PROVIDERS].sort((a, b) => {
+    if (a.id === primaryId) return -1;
+    if (b.id === primaryId) return 1;
+    return Number(b.free) - Number(a.free);
+  });
+
+/**
  * Pick a provider from the environment: an explicit ENGRAM_PROVIDER wins;
  * otherwise the first provider whose key env var has a non-empty value.
  * Returns null if no provider key is present.

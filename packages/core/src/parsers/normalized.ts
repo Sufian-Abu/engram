@@ -1,11 +1,12 @@
 import type { Conversation, Message, Provider, Role } from "../types.js";
+import { shortHash } from "../util.js";
 
 const PROVIDERS: Provider[] = ["claude", "claude-code", "chatgpt", "gemini", "unknown"];
 const ROLES: Role[] = ["user", "assistant", "system", "tool"];
 
 /**
- * Parse Engram's own normalized conversation format. This is the format the
- * browser extension (Phase 2) will emit, and what sample fixtures use.
+ * Parse Engram's own normalized conversation format — the shape the browser
+ * extension emits and what sample fixtures use.
  * Returns null if the object isn't a recognizable conversation.
  */
 export function parseNormalized(raw: unknown): Conversation | null {
@@ -35,21 +36,11 @@ export function parseNormalized(raw: unknown): Conversation | null {
   if (messages.length === 0) return null;
 
   return {
-    id: typeof o.id === "string" && o.id ? o.id : `conv-${hash(JSON.stringify(o.messages))}`,
+    id: typeof o.id === "string" && o.id ? o.id : `conv-${shortHash(JSON.stringify(o.messages))}`,
     provider,
     title: typeof o.title === "string" ? o.title : undefined,
     createdAt: typeof o.createdAt === "string" ? o.createdAt : undefined,
     updatedAt: typeof o.updatedAt === "string" ? o.updatedAt : undefined,
     messages,
   };
-}
-
-/** Tiny stable string hash (FNV-1a) for synthesizing ids when absent. */
-function hash(s: string): string {
-  let h = 0x811c9dc5;
-  for (let i = 0; i < s.length; i++) {
-    h ^= s.charCodeAt(i);
-    h = Math.imul(h, 0x01000193);
-  }
-  return (h >>> 0).toString(16);
 }

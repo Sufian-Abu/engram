@@ -41,7 +41,7 @@ async function render(): Promise<void> {
   if (conversations.length === 0) {
     const empty = document.createElement("li");
     empty.className = "empty";
-    empty.textContent = "Open a conversation on claude.ai to capture it.";
+    empty.textContent = "Open a conversation on claude.ai, chatgpt.com, or gemini to capture it.";
     els.list.append(empty);
     return;
   }

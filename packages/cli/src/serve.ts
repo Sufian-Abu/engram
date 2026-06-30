@@ -1,6 +1,6 @@
 import http from "node:http";
 import { parseAny } from "@engram/core";
-import { loadConfig, type Config } from "./config.js";
+import { loadConfig, MISSING_KEY_MESSAGE, type Config } from "./config.js";
 import { writeKbEntry } from "./writer.js";
 import { syncKb } from "./sync.js";
 
@@ -143,8 +143,3 @@ function flag(args: string[], name: string): string | undefined {
   const i = args.indexOf(name);
   return i !== -1 ? args[i + 1] : undefined;
 }
-
-const MISSING_KEY_MESSAGE =
-  "No provider API key found. Copy .env.example to .env and set one of:\n" +
-  "  GROQ_API_KEY (free)  GEMINI_API_KEY (free)  OPENROUTER_API_KEY (free)\n" +
-  "  ANTHROPIC_API_KEY    OPENAI_API_KEY";

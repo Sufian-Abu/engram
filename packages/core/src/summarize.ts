@@ -2,6 +2,7 @@ import type { Conversation, KBEntry } from "./types.js";
 import { getProviderById } from "./providers.js";
 import { requestKbDraft } from "./llm-client.js";
 import { KB_TOOL_NAME, type KbEntryDraft } from "./kb-schema.js";
+import { slug } from "./util.js";
 
 const DEFAULT_PROVIDER_ID = "anthropic";
 // ~8k input tokens — fits Groq's free-tier 12k tokens/minute budget (plus the
@@ -150,7 +151,7 @@ export const renderTranscript = (conv: Conversation, maxChars: number): string =
 export const toKbEntry = (draft: KbEntryDraft, conv: Conversation, date: string): KBEntry => ({
   title: draft.title || conv.title || "Untitled conversation",
   date,
-  project: slugify(draft.project || "general"),
+  project: slug(draft.project || "general", "general"),
   topics: (draft.topics ?? []).map(String).slice(0, MAX_TOPICS),
   summary: draft.summary || "",
   keyFacts: (draft.keyFacts ?? []).map(String),
@@ -160,10 +161,3 @@ export const toKbEntry = (draft: KbEntryDraft, conv: Conversation, date: string)
   provider: conv.provider,
   sourceConversationId: conv.id,
 });
-
-const slugify = (s: string): string =>
-  s
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/^-+|-+$/g, "")
-    .slice(0, 60) || "general";

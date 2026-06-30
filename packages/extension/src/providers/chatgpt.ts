@@ -1,4 +1,5 @@
-import type { Conversation, Message, Role } from "../types.js";
+import { isObject, asString, normalizeRole, blocksToText } from "@engram/core/browser";
+import type { Conversation, Message } from "../types.js";
 import type { WebProvider } from "./types.js";
 
 /**
@@ -14,7 +15,7 @@ export function parseChatGptWeb(raw: unknown): Conversation | null {
   const mapping = raw.mapping;
   if (!isObject(mapping)) return null;
 
-  const id = str(raw.conversation_id) || str(raw.id);
+  const id = asString(raw.conversation_id) || asString(raw.id);
   if (!id) return null;
 
   const messages = linearize(mapping)
@@ -25,7 +26,7 @@ export function parseChatGptWeb(raw: unknown): Conversation | null {
   return {
     id,
     provider: "chatgpt",
-    title: str(raw.title) || undefined,
+    title: asString(raw.title) || undefined,
     createdAt: epochToIso(raw.create_time),
     updatedAt: epochToIso(raw.update_time),
     messages,
@@ -37,10 +38,15 @@ export function matchChatGptUrl(url: string): boolean {
   return /\/backend-api\/conversation\/[0-9a-f-]{36}(?:[/?]|$)/i.test(url);
 }
 
-/** Walk root -> latest child, collecting each node's message in order. */
+/**
+ * Walk root -> latest child, collecting each node's message in order. Note: the
+ * file-export parser in @engram/core (parsers/chatgpt.ts) walks current_node ->
+ * parent instead; the two can differ on a branched/regenerated chat. If you
+ * change linearization here, reconcile it there too.
+ */
 function linearize(mapping: Record<string, unknown>): Record<string, unknown>[] {
   const nodes = mapping as Record<string, { message?: unknown; parent?: unknown; children?: unknown }>;
-  const root = Object.values(nodes).find((n) => !n.parent || !(str(n.parent) in nodes));
+  const root = Object.values(nodes).find((n) => !n.parent || !(asString(n.parent) in nodes));
 
   const out: Record<string, unknown>[] = [];
   let current = root;
@@ -50,40 +56,23 @@ function linearize(mapping: Record<string, unknown>): Record<string, unknown>[] 
     if (isObject(current.message)) out.push(current.message);
     const children = Array.isArray(current.children) ? current.children : [];
     const lastChildId = children[children.length - 1];
-    current = lastChildId !== undefined ? nodes[str(lastChildId)] : undefined;
+    current = lastChildId !== undefined ? nodes[asString(lastChildId)] : undefined;
   }
   return out;
 }
 
 function toMessage(message: Record<string, unknown>): Message | null {
   const author = isObject(message.author) ? message.author : {};
-  const role = normalizeRole(str(author.role));
+  const role = normalizeRole(author.role);
   if (role === "system") return null; // root system primer is noise
-  const content = partsToText(message.content).trim();
+  // ChatGPT content is `{ parts: [...] }` — parts are strings (or text blocks).
+  const content = (isObject(message.content) ? blocksToText(message.content.parts) : "").trim();
   if (!content) return null;
   return { role, content, timestamp: epochToIso(message.create_time) };
 }
 
-function partsToText(content: unknown): string {
-  if (!isObject(content) || !Array.isArray(content.parts)) return "";
-  return content.parts.filter((p): p is string => typeof p === "string" && p.length > 0).join("\n\n");
-}
-
-function normalizeRole(role: string): Role {
-  if (role === "assistant" || role === "system" || role === "tool") return role;
-  return "user";
-}
-
 function epochToIso(value: unknown): string | undefined {
   return typeof value === "number" && value > 0 ? new Date(value * 1000).toISOString() : undefined;
-}
-
-function isObject(x: unknown): x is Record<string, unknown> {
-  return typeof x === "object" && x !== null;
-}
-
-function str(x: unknown): string {
-  return typeof x === "string" ? x : "";
 }
 
 export const chatgptProvider: WebProvider = {

@@ -12,6 +12,10 @@ import { ENGRAM_SOURCE, type CapturedMessage, type ProviderId } from "./types.js
  * Network interception beats DOM scraping: it survives UI redesigns and gets
  * the full transcript.
  */
+// Wait this long after the reply stream ends before re-fetching, to let the
+// provider persist the new turn server-side.
+const PERSIST_DELAY_MS = 800;
+
 const originalFetch = window.fetch;
 
 window.fetch = async function patchedFetch(...args): Promise<Response> {
@@ -60,7 +64,7 @@ async function recaptureAfterReply(
     /* ignore */
   }
   try {
-    await new Promise((r) => setTimeout(r, 800)); // let the server persist the turn
+    await new Promise((r) => setTimeout(r, PERSIST_DELAY_MS));
     const conv = await originalFetch(conversationUrl, { credentials: "include" });
     if (conv.ok) {
       console.debug("[engram] re-captured", provider, "after reply:", conversationUrl);
