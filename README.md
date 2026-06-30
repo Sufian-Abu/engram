@@ -23,39 +23,52 @@ Engram turns that transcript into something durable: owned, versioned in Git, gr
 Four stages — capture the conversation, summarize it with your own key, organize the note on disk, and sync it to storage you own:
 
 ```mermaid
-flowchart LR
-    EXT["🧩 Browser extension<br/><small>claude.ai · chatgpt.com · gemini</small>"]
-    PROXY["🔌 API proxy<br/><small>localhost base-URL</small>"]
-    FILES["📄 File exports<br/><small>ChatGPT export · Claude Code</small>"]
+flowchart TD
+    subgraph CAP["① Capture — get the conversation out"]
+        direction LR
+        EXT["🧩 Browser extension<br/><small>claude.ai · chatgpt.com · gemini<br/>hooks fetch · reads DOM</small>"]
+        PROXY["🔌 API proxy<br/><small>point your client's<br/>base-URL here</small>"]
+        FILES["📄 File import<br/><small>ChatGPT export ·<br/>Claude Code</small>"]
+    end
 
-    CONV{{"📝 Normalized<br/>Conversation"}}
+    CONV{{"📝 Normalized Conversation<br/><small>id · provider · messages</small>"}}
 
-    PROV["🤖 Summarize · your key<br/><small>Groq · Gemini · OpenRouter<br/>Anthropic · OpenAI · Ollama (local)</small><br/>↳ failover + JSON fallback"]
+    SUM["🤖 ② Summarize · your key (BYOK)<br/><small>Groq · Gemini · OpenRouter · Anthropic · OpenAI · Ollama (local)<br/>auto-failover + tool-call → JSON fallback</small>"]
 
-    NOTE["🗂️ Markdown note<br/><small>kb/YYYY/MM/project/slug.md<br/>+ paste-ready resume prompt</small>"]
+    NOTE["🗂️ ③ Organize + render<br/><small>kb/YYYY/MM/project/slug.md<br/>summary · key facts · decisions · open questions<br/>+ paste-ready resume prompt</small>"]
 
-    GIT["🔒 Private GitHub repo"]
-    DRIVE["☁️ Google Drive<br/><small>rclone</small>"]
+    subgraph SYNC["④ Sync — storage you own"]
+        direction LR
+        GIT["🔒 Private GitHub repo<br/><small>versioned · auto-rebased</small>"]
+        DRIVE["☁️ Google Drive<br/><small>rclone · drive.file scope</small>"]
+    end
 
-    EXT & PROXY & FILES -->|① capture| CONV
-    CONV -->|② summarize| PROV
-    PROV -->|③ organize + render| NOTE
-    NOTE -->|④ sync| GIT & DRIVE
+    EXT --> CONV
+    PROXY --> CONV
+    FILES --> CONV
+    CONV --> SUM --> NOTE
+    NOTE --> GIT
+    NOTE --> DRIVE
 
-    classDef capture fill:#6b4cff,stroke:#4a32c0,color:#fff,stroke-width:2px
-    classDef contract fill:#fff7e6,stroke:#e8821a,color:#7a4a00,stroke-width:3px
-    classDef summarize fill:#1a9d4a,stroke:#137a39,color:#fff,stroke-width:2px
-    classDef organize fill:#e8821a,stroke:#b8650f,color:#fff,stroke-width:2px
-    classDef sync fill:#0d8bd9,stroke:#0a6ba8,color:#fff,stroke-width:2px
+    classDef capnode fill:#7c5cff,stroke:#4a32c0,color:#fff
+    classDef hub fill:#fff3d6,stroke:#e8821a,color:#7a4a00,stroke-width:3px
+    classDef sumnode fill:#1a9d4a,stroke:#117a37,color:#fff
+    classDef orgnode fill:#e8821a,stroke:#b8650f,color:#fff
+    classDef stonode fill:#0d8bd9,stroke:#0a6ba8,color:#fff
 
-    class EXT,PROXY,FILES capture
-    class CONV contract
-    class PROV summarize
-    class NOTE organize
-    class GIT,DRIVE sync
+    class EXT,PROXY,FILES capnode
+    class CONV hub
+    class SUM sumnode
+    class NOTE orgnode
+    class GIT,DRIVE stonode
+
+    style CAP fill:#f1ecff,stroke:#7c5cff,color:#4a32c0
+    style SYNC fill:#e8f5fd,stroke:#0d8bd9,color:#0a6ba8
 ```
 
-Everything funnels through one shape — the **normalized `Conversation`** (the cream box) — which is why any capture source pairs with any provider. Two ways to run it: the **self-contained extension** does all four stages in the browser, or the local **`engram serve` daemon** does them while the extension just feeds it captures.
+**Read it as a funnel.** Three capture surfaces (purple) all produce one shape — the **normalized `Conversation`** (the gold hub). That single contract is the whole trick: any capture source pairs with any provider, because neither side knows about the other. From the hub it's always the same three steps — summarize (green) → render a note (orange) → sync to storage you own (blue).
+
+**Two ways to run the engine.** The **self-contained extension** does stages ②–④ right in the browser (set a key in its Options, optionally a GitHub token). Or run the local **`engram serve` daemon** and the extension just feeds it captures while your keys stay on your machine. Same pipeline either way.
 
 **Capture.** Getting the conversation out is the hard part, and it differs by surface:
 
@@ -192,6 +205,30 @@ npm run sync
 ```
 
 Nothing leaves your machine except the summarize call to your chosen provider and the sync to your own Git/Drive. This source repo gitignores `kb/` so a stray conversation can never be committed here. See [SECURITY.md](SECURITY.md) for credential handling (and use a **fine-grained, repo-scoped** GitHub token, not a classic `repo` one).
+
+### Mirror to Google Drive (optional)
+
+A second copy on Drive, in case you lose the repo. Engram uses [rclone](https://rclone.org); connect it once:
+
+```bash
+rclone config
+```
+
+Walk through: **`n`** (new remote) → name **`gdrive`** → storage **`drive`** → leave `client_id`/`client_secret` blank → **scope: `3`** → blank for the rest → advanced **`n`** → browser auth **`y`** → sign in → **Allow**.
+
+Two prompts matter:
+
+- **Scope `3` (`drive.file`)** — pick this. It's least-privilege: rclone can touch **only the files it creates** (your `engram-kb` folder), not the rest of your Drive. (Scope `1` grants access to your *entire* Drive — avoid it.)
+- **"Configure this as a Shared Drive (Team Drive)?" → `n`.** Say no; with `drive.file` rclone can't list Team Drives and you'd get a `403`. You want your personal Drive.
+
+Then point Engram at it and sync:
+
+```bash
+echo 'ENGRAM_DRIVE_REMOTE=gdrive' >> .env
+npm run sync          # → "Mirrored to gdrive:engram-kb"
+```
+
+Only your notes are mirrored — `engram sync` excludes `.git/` and dotfiles. To revoke later: `rclone config delete gdrive`, then remove access at [myaccount.google.com/connections](https://myaccount.google.com/connections).
 
 ## How capture works, and its limits
 
