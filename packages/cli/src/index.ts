@@ -47,6 +47,6 @@ const main = async (): Promise<void> => {
 };
 
 main().catch((err) => {
-  process.stderr.write(`\nError: ${err?.message ?? err}\n`);
+  process.stderr.write(`\nengram: ${err?.message ?? err}\n`);
   process.exit(1);
 });

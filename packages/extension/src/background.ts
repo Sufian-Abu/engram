@@ -27,7 +27,7 @@ async function handleCapture(conversation: Conversation): Promise<void> {
   await updateBadge(next.length);
 
   const outcome = await syncConversation(conversation);
-  console.log(`[engram] capture ${conversation.provider} ${conversation.id} -> ${outcome}`);
+  console.debug(`[engram] capture ${conversation.provider} ${conversation.id} -> ${outcome}`);
   if (outcome !== "no-key") {
     await setMode(outcome === "push-failed" ? "summarized" : outcome === "summarize-failed" ? "error" : "synced");
     return;
@@ -35,7 +35,7 @@ async function handleCapture(conversation: Conversation): Promise<void> {
 
   // No provider key configured — fall back to the local daemon, else just store.
   const daemon = await sendToDaemon(conversation);
-  console.log(`[engram] no extension key; daemon ${daemon.ok ? "accepted" : "unreachable"}`);
+  console.debug(`[engram] no extension key; daemon ${daemon.ok ? "accepted" : "unreachable"}`);
   await setMode(daemon.ok ? "daemon" : "stored");
 }
 

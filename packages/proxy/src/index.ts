@@ -35,7 +35,7 @@ const port = Number(flag("--port") ?? process.env.ENGRAM_PROXY_PORT ?? 8788);
 const captureDir = path.resolve(flag("--out") ?? process.env.ENGRAM_PROXY_DIR ?? "./.engram/api");
 
 const server = createProxyServer({ port, captureDir });
-server.listen(port, () => {
+server.listen(port, "127.0.0.1", () => {
   process.stdout.write(
     `engram-proxy listening on http://localhost:${port}\n` +
       `  capturing to ${captureDir}\n` +
