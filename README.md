@@ -109,6 +109,20 @@ flowchart TD
 
 **Two ways to run the engine.** The **self-contained extension** does stages ②–④ right in the browser (set a key in its Options, optionally a GitHub token). Or run the local **`engram serve` daemon** and the extension just feeds it captures while your keys stay on your machine. Same pipeline either way.
 
+## Screenshots
+
+It captures as you chat — the popup lists every conversation, ready to export or auto-push:
+
+<img src="docs/screenshots/popup.png" alt="Engram popup showing 15 captured conversations — Brand Name Suggestions, Repo Analysis and Feedback, Docker IP Cache Issue, Subdomains for Development Setup — with Export JSON and Clear buttons" width="380" />
+
+Set it up once in the Options page — bring your own key (several providers, with automatic failover) or run fully local with Ollama:
+
+<img src="docs/screenshots/settings-providers.png" alt="Engram Options page: primary provider dropdown set to Groq, with API key fields for Groq, Gemini, OpenRouter, Anthropic and OpenAI, plus a local Ollama note" width="640" />
+
+Optionally push notes straight to your own private GitHub repo:
+
+<img src="docs/screenshots/settings-github.png" alt="Engram Options page GitHub section: model override plus GitHub token, repo (owner/engram-kb) and branch fields" width="640" />
+
 ## Privacy
 
 There is **no Engram server** — nothing is ever sent to the author, and there's no telemetry. To be precise about where your data goes:
