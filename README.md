@@ -2,17 +2,17 @@
 
 Your AI conversations, remembered.
 
-[![CI](https://github.com/Sufian-Abu/engram/actions/workflows/ci.yml/badge.svg)](https://github.com/Sufian-Abu/engram/actions/workflows/ci.yml)
-[![Release](https://img.shields.io/github/v/release/Sufian-Abu/engram?sort=semver&color=6b4cff)](https://github.com/Sufian-Abu/engram/releases)
-[![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+[![CI](https://github.com/Sufian-Abu/engram/actions/workflows/ci.yml/badge.svg?branch=master)](https://github.com/Sufian-Abu/engram/actions/workflows/ci.yml)
+[![version](https://img.shields.io/badge/version-0.1.0-6b4cff)](https://github.com/Sufian-Abu/engram/releases)
+[![license](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
 [![TypeScript](https://img.shields.io/badge/TypeScript-3178C6?logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
-[![PRs welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](#contributing)
+[![PRs welcome](https://img.shields.io/badge/PRs-welcome-brightgreen)](#contributing)
 
 I kept losing context. A long Claude thread where we'd worked out an architecture, a ChatGPT chat full of debugging history, the project setup I'd explained five times across different tools — all of it locked inside someone else's product, one policy change or deleted-history click away from being gone. Models don't remember you between sessions, and the part that actually matters — the back-and-forth, the decisions, the project context — lives in walled gardens you don't control.
 
 Engram fixes that. It takes your conversations out of Claude, ChatGPT, and the API, distills each one into a clean Markdown note, and stores those notes in a private Git repo (and optionally Google Drive) that *you* own. Switch models, get rate-limited, lose access, start a fresh chat — your accumulated context is still there, searchable and yours. Every note even ends with a paste-ready prompt to resume the work in any model.
 
-> An *engram* is the physical trace a memory leaves in the brain. This does the same thing for your chats.
+*An **engram** is the physical trace a memory leaves in the brain — this does the same thing for your chats.*
 
 > [!NOTE]
 > **Early (v0.1) and unofficial.** Web capture reads undocumented provider APIs / DOM, so a site redesign can temporarily break capture until selectors are updated (Gemini is best-effort). Engram only ever *reads* conversations you open — it never sends messages or touches your account. Full details under [How capture works, and its limits](#how-capture-works-and-its-limits).
@@ -46,17 +46,18 @@ Engram turns that transcript into something durable: owned, versioned in Git, gr
 
 ## How it compares
 
-The providers' own exports are a one-time JSON dump of raw messages, on their servers until you download them. Engram is a continuous, distilled, portable knowledge base you own.
+The official exports are a one-time JSON dump of raw messages that sits on the provider's servers until you download it. Keeping your own notes in Obsidian works, but every note is manual. Engram is the middle path made automatic — a distilled, portable knowledge base you own, updated as you chat.
 
-| | ChatGPT Export | Claude Export | Obsidian (manual) | **Engram** |
-| --- | --- | --- | --- | --- |
-| Output | one big `conversations.json` | JSON / data dump | Markdown *you* write | clean per-conversation **Markdown** |
-| Readable & searchable | ❌ raw JSON | ❌ raw dump | ✅ | ✅ front-matter + `grep` / Obsidian |
-| Distilled (summary, decisions, resume prompt) | ❌ | ❌ | ⚠️ you write it | ✅ automatic |
-| Cross-provider | ❌ ChatGPT only | ❌ Claude only | ✅ (if you copy it in) | ✅ Claude · ChatGPT · Gemini · API |
-| Effort | manual export | manual export | manual copy-paste | ✅ captures as you chat |
-| Stored where | their servers → your download | their servers → your download | your vault | **your** Git repo + Drive |
-| Portable to another model | ❌ | ❌ | ⚠️ manual | ✅ paste-ready resume prompt |
+| | ChatGPT / Claude export | Manual notes (Obsidian) | **Engram** |
+| --- | --- | --- | --- |
+| **Format** | one raw `conversations.json` | Markdown you write | clean per-conversation Markdown |
+| **Distillation** | none — full transcript | whatever you type | auto summary, decisions, resume prompt |
+| **Effort** | manual export, on request | copy-paste every time | none — captures as you chat |
+| **Coverage** | single provider | only what you save | Claude, ChatGPT, Gemini & API in one place |
+| **Ownership** | their servers until you export | your vault | your private Git repo + Drive |
+| **Reuse in another model** | not really | copy-paste and adapt | paste the built-in resume prompt |
+
+In short: exports give you raw data you have to wrangle; manual notes give you a clean format but all the work; Engram gives you the clean format **and** does the work.
 
 ## How it works
 
@@ -64,23 +65,23 @@ Four stages — capture the conversation, summarize it with your own key, organi
 
 ```mermaid
 flowchart TD
-    subgraph CAP["① Capture — get the conversation out"]
+    subgraph CAP["1 · Capture"]
         direction LR
-        EXT["🧩 Browser extension<br/><small>claude.ai · chatgpt.com · gemini<br/>hooks fetch · reads DOM</small>"]
-        PROXY["🔌 API proxy<br/><small>point your client's<br/>base-URL here</small>"]
-        FILES["📄 File import<br/><small>ChatGPT export ·<br/>Claude Code</small>"]
+        EXT["Browser extension<br/><small>claude.ai · chatgpt.com · gemini</small>"]
+        PROXY["API proxy<br/><small>client base-URL shim</small>"]
+        FILES["File import<br/><small>ChatGPT / Claude Code export</small>"]
     end
 
-    CONV{{"📝 Normalized Conversation<br/><small>id · provider · messages</small>"}}
+    CONV{{"Normalized Conversation<br/><small>id · provider · messages</small>"}}
 
-    SUM["🤖 ② Summarize · your key (BYOK)<br/><small>Groq · Gemini · OpenRouter · Anthropic · OpenAI · Ollama (local)<br/>auto-failover + tool-call → JSON fallback</small>"]
+    SUM["2 · Summarize — your key<br/><small>Groq · Gemini · OpenRouter · Anthropic · OpenAI · Ollama<br/>failover + JSON fallback</small>"]
 
-    NOTE["🗂️ ③ Organize + render<br/><small>kb/YYYY/MM/project/slug.md<br/>summary · key facts · decisions · open questions<br/>+ paste-ready resume prompt</small>"]
+    NOTE["3 · Organize + render<br/><small>kb/YYYY/MM/project/slug.md · resume prompt</small>"]
 
-    subgraph SYNC["④ Sync — storage you own"]
+    subgraph SYNC["4 · Sync"]
         direction LR
-        GIT["🔒 Private GitHub repo<br/><small>versioned · auto-rebased</small>"]
-        DRIVE["☁️ Google Drive<br/><small>rclone · drive.file scope</small>"]
+        GIT["Private GitHub repo"]
+        DRIVE["Google Drive<br/><small>rclone · drive.file</small>"]
     end
 
     EXT --> CONV
@@ -90,23 +91,21 @@ flowchart TD
     NOTE --> GIT
     NOTE --> DRIVE
 
-    classDef capnode fill:#7c5cff,stroke:#4a32c0,color:#fff
-    classDef hub fill:#fff3d6,stroke:#e8821a,color:#7a4a00,stroke-width:3px
-    classDef sumnode fill:#1a9d4a,stroke:#117a37,color:#fff
-    classDef orgnode fill:#e8821a,stroke:#b8650f,color:#fff
-    classDef stonode fill:#0d8bd9,stroke:#0a6ba8,color:#fff
+    classDef src fill:#eef2f7,stroke:#94a3b8,color:#1e293b
+    classDef hub fill:#6b4cff,stroke:#4a32c0,color:#ffffff
+    classDef step fill:#f8fafc,stroke:#cbd5e1,color:#334155
+    classDef store fill:#eef2f7,stroke:#94a3b8,color:#1e293b
 
-    class EXT,PROXY,FILES capnode
+    class EXT,PROXY,FILES src
     class CONV hub
-    class SUM sumnode
-    class NOTE orgnode
-    class GIT,DRIVE stonode
+    class SUM,NOTE step
+    class GIT,DRIVE store
 
-    style CAP fill:#f1ecff,stroke:#7c5cff,color:#4a32c0
-    style SYNC fill:#e8f5fd,stroke:#0d8bd9,color:#0a6ba8
+    style CAP fill:#ffffff,stroke:#e2e8f0,color:#475569
+    style SYNC fill:#ffffff,stroke:#e2e8f0,color:#475569
 ```
 
-**Read it as a funnel.** Three capture surfaces (purple) all produce one shape — the **normalized `Conversation`** (the gold hub). That single contract is the whole trick: any capture source pairs with any provider, because neither side knows about the other. From the hub it's always the same three steps — summarize (green) → render a note (orange) → sync to storage you own (blue).
+**Read it as a funnel.** The three capture surfaces all produce one shape — the **normalized `Conversation`** (the highlighted hub). That single contract is the whole trick: any capture source pairs with any provider, because neither side knows about the other. From the hub it's always the same three steps — summarize, render a note, then sync it to storage you own.
 
 **Two ways to run the engine.** The **self-contained extension** does stages ②–④ right in the browser (set a key in its Options, optionally a GitHub token). Or run the local **`engram serve` daemon** and the extension just feeds it captures while your keys stay on your machine. Same pipeline either way.
 
