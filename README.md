@@ -2,11 +2,20 @@
 
 Your AI conversations, remembered.
 
+[![CI](https://github.com/Sufian-Abu/engram/actions/workflows/ci.yml/badge.svg)](https://github.com/Sufian-Abu/engram/actions/workflows/ci.yml)
+[![Release](https://img.shields.io/github/v/release/Sufian-Abu/engram?sort=semver&color=6b4cff)](https://github.com/Sufian-Abu/engram/releases)
+[![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+[![TypeScript](https://img.shields.io/badge/TypeScript-3178C6?logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
+[![PRs welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](#contributing)
+
 I kept losing context. A long Claude thread where we'd worked out an architecture, a ChatGPT chat full of debugging history, the project setup I'd explained five times across different tools — all of it locked inside someone else's product, one policy change or deleted-history click away from being gone. Models don't remember you between sessions, and the part that actually matters — the back-and-forth, the decisions, the project context — lives in walled gardens you don't control.
 
 Engram fixes that. It takes your conversations out of Claude, ChatGPT, and the API, distills each one into a clean Markdown note, and stores those notes in a private Git repo (and optionally Google Drive) that *you* own. Switch models, get rate-limited, lose access, start a fresh chat — your accumulated context is still there, searchable and yours. Every note even ends with a paste-ready prompt to resume the work in any model.
 
 > An *engram* is the physical trace a memory leaves in the brain. This does the same thing for your chats.
+
+> [!NOTE]
+> **Early (v0.1) and unofficial.** Web capture reads undocumented provider APIs / DOM, so a site redesign can temporarily break capture until selectors are updated (Gemini is best-effort). Engram only ever *reads* conversations you open — it never sends messages or touches your account. Full details under [How capture works, and its limits](#how-capture-works-and-its-limits).
 
 ## Why Engram?
 
@@ -15,6 +24,15 @@ Engram fixes that. It takes your conversations out of Claude, ChatGPT, and the A
 - **One knowledge base across tools.** Claude, ChatGPT, Gemini, and API conversations all land in the same searchable place.
 - **Model-agnostic.** Every note ends with a paste-ready **resume prompt**, so you can pick the work back up in *any* model.
 - **Plain Markdown.** YAML front-matter you can `grep`, open in Obsidian, or feed to another tool.
+
+## Who is this for?
+
+Anyone whose real work lives inside AI chats and would hurt to lose it:
+
+- **Developers** carrying architecture, decisions, and debugging history across sessions and tools.
+- **Researchers & students** building a searchable trail of what they learned and figured out.
+- **Founders & PMs** juggling context across Claude, ChatGPT, and Gemini.
+- **Heavy AI users** who switch models and don't want to re-explain everything each time.
 
 ## The problem it solves
 
@@ -30,15 +48,15 @@ Engram turns that transcript into something durable: owned, versioned in Git, gr
 
 The providers' own exports are a one-time JSON dump of raw messages, on their servers until you download them. Engram is a continuous, distilled, portable knowledge base you own.
 
-| | ChatGPT Export | Claude Export | **Engram** |
-| --- | --- | --- | --- |
-| Output | one big `conversations.json` | JSON / data dump | clean per-conversation **Markdown** |
-| Readable & searchable | ❌ raw JSON | ❌ raw dump | ✅ front-matter + `grep` / Obsidian |
-| Distilled (summary, decisions, resume prompt) | ❌ | ❌ | ✅ |
-| Cross-provider | ❌ ChatGPT only | ❌ Claude only | ✅ Claude · ChatGPT · Gemini · API |
-| Continuous | ❌ manual, on request | ❌ manual | ✅ captures as you chat |
-| Stored where | their servers → your download | their servers → your download | **your** Git repo + Drive |
-| Portable to another model | ❌ | ❌ | ✅ paste-ready resume prompt |
+| | ChatGPT Export | Claude Export | Obsidian (manual) | **Engram** |
+| --- | --- | --- | --- | --- |
+| Output | one big `conversations.json` | JSON / data dump | Markdown *you* write | clean per-conversation **Markdown** |
+| Readable & searchable | ❌ raw JSON | ❌ raw dump | ✅ | ✅ front-matter + `grep` / Obsidian |
+| Distilled (summary, decisions, resume prompt) | ❌ | ❌ | ⚠️ you write it | ✅ automatic |
+| Cross-provider | ❌ ChatGPT only | ❌ Claude only | ✅ (if you copy it in) | ✅ Claude · ChatGPT · Gemini · API |
+| Effort | manual export | manual export | manual copy-paste | ✅ captures as you chat |
+| Stored where | their servers → your download | their servers → your download | your vault | **your** Git repo + Drive |
+| Portable to another model | ❌ | ❌ | ⚠️ manual | ✅ paste-ready resume prompt |
 
 ## How it works
 
@@ -273,7 +291,7 @@ Everything lives in `.env` (copy from `.env.example`). Set **one** provider key;
 | `OPENROUTER_API_KEY` | Provider key (free models) — OpenRouter | — |
 | `ANTHROPIC_API_KEY` | Provider key (paid) — Claude | — |
 | `OPENAI_API_KEY` | Provider key (paid) — ChatGPT models | — |
-| `ENGRAM_PROVIDER` | Force which provider is primary: `groq` \| `gemini` \| `openrouter` \| `anthropic` \| `openai` \| `ollama` | auto-detect |
+| `ENGRAM_PROVIDER` | Force the primary provider: `groq`, `gemini`, `openrouter`, `anthropic`, `openai`, `ollama` | auto-detect |
 | `ENGRAM_MODEL` | Override the summarizer model | provider default |
 | `ENGRAM_KB_DIR` | Where notes are written (your KB repo) | `./kb` |
 | `ENGRAM_DRIVE_REMOTE` | rclone remote name for the Drive mirror | *(off)* |
