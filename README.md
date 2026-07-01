@@ -8,6 +8,14 @@ Engram fixes that. It takes your conversations out of Claude, ChatGPT, and the A
 
 > An *engram* is the physical trace a memory leaves in the brain. This does the same thing for your chats.
 
+## Why Engram?
+
+- **You own it.** Notes live in *your* private Git repo (and optionally Drive) — not a product that can ban you, lose your history, or shut down.
+- **BYOK, or no cloud at all.** Summarize with a free key (Groq / Gemini / OpenRouter) or fully local with **Ollama**. Nothing ever touches an Engram-run server — there isn't one.
+- **One knowledge base across tools.** Claude, ChatGPT, Gemini, and API conversations all land in the same searchable place.
+- **Model-agnostic.** Every note ends with a paste-ready **resume prompt**, so you can pick the work back up in *any* model.
+- **Plain Markdown.** YAML front-matter you can `grep`, open in Obsidian, or feed to another tool.
+
 ## The problem it solves
 
 LLMs are stateless. The provider stores your *messages* so the UI can show them, but they don't store your *knowledge*, and you can't easily get it out in a form that's useful later. The real asset isn't the model — it's the transcript: what you were building, what you decided and why, what's still open. Today that asset is:
@@ -17,6 +25,20 @@ LLMs are stateless. The provider stores your *messages* so the UI can show them,
 - **Siloed** — your Claude history can't see your ChatGPT history, and neither survives you switching tools.
 
 Engram turns that transcript into something durable: owned, versioned in Git, greppable, and model-agnostic.
+
+## How it compares
+
+The providers' own exports are a one-time JSON dump of raw messages, on their servers until you download them. Engram is a continuous, distilled, portable knowledge base you own.
+
+| | ChatGPT Export | Claude Export | **Engram** |
+| --- | --- | --- | --- |
+| Output | one big `conversations.json` | JSON / data dump | clean per-conversation **Markdown** |
+| Readable & searchable | ❌ raw JSON | ❌ raw dump | ✅ front-matter + `grep` / Obsidian |
+| Distilled (summary, decisions, resume prompt) | ❌ | ❌ | ✅ |
+| Cross-provider | ❌ ChatGPT only | ❌ Claude only | ✅ Claude · ChatGPT · Gemini · API |
+| Continuous | ❌ manual, on request | ❌ manual | ✅ captures as you chat |
+| Stored where | their servers → your download | their servers → your download | **your** Git repo + Drive |
+| Portable to another model | ❌ | ❌ | ✅ paste-ready resume prompt |
 
 ## How it works
 
@@ -69,6 +91,16 @@ flowchart TD
 **Read it as a funnel.** Three capture surfaces (purple) all produce one shape — the **normalized `Conversation`** (the gold hub). That single contract is the whole trick: any capture source pairs with any provider, because neither side knows about the other. From the hub it's always the same three steps — summarize (green) → render a note (orange) → sync to storage you own (blue).
 
 **Two ways to run the engine.** The **self-contained extension** does stages ②–④ right in the browser (set a key in its Options, optionally a GitHub token). Or run the local **`engram serve` daemon** and the extension just feeds it captures while your keys stay on your machine. Same pipeline either way.
+
+## Privacy
+
+There is **no Engram server** — nothing is ever sent to the author, and there's no telemetry. To be precise about where your data goes:
+
+- **Capture and storage stay on your machine.** Conversations are read locally; notes are written to your disk.
+- **Summarizing sends the transcript to the one provider you choose** — Groq, Gemini, etc. — using your key. Choose **Ollama** and even that stays fully local (no cloud at all).
+- **GitHub and Google Drive are opt-in.** Nothing is uploaded to either until *you* configure a repo/remote; your keys and tokens live in `.env` or the extension's storage, never anywhere else.
+
+See [SECURITY.md](SECURITY.md) for credential handling, the daemon's protections, and why the extension asks for each permission.
 
 **Capture.** Getting the conversation out is the hard part, and it differs by surface:
 
@@ -230,6 +262,28 @@ npm run sync          # → "Mirrored to gdrive:engram-kb"
 
 Only your notes are mirrored — `engram sync` excludes `.git/` and dotfiles. To revoke later: `rclone config delete gdrive`, then remove access at [myaccount.google.com/connections](https://myaccount.google.com/connections).
 
+## Configuration reference
+
+Everything lives in `.env` (copy from `.env.example`). Set **one** provider key; the rest are optional.
+
+| Variable | What it does | Default |
+| --- | --- | --- |
+| `GROQ_API_KEY` | Provider key (free) — Groq | — |
+| `GEMINI_API_KEY` | Provider key (free tier) — Google Gemini | — |
+| `OPENROUTER_API_KEY` | Provider key (free models) — OpenRouter | — |
+| `ANTHROPIC_API_KEY` | Provider key (paid) — Claude | — |
+| `OPENAI_API_KEY` | Provider key (paid) — ChatGPT models | — |
+| `ENGRAM_PROVIDER` | Force which provider is primary: `groq` \| `gemini` \| `openrouter` \| `anthropic` \| `openai` \| `ollama` | auto-detect |
+| `ENGRAM_MODEL` | Override the summarizer model | provider default |
+| `ENGRAM_KB_DIR` | Where notes are written (your KB repo) | `./kb` |
+| `ENGRAM_DRIVE_REMOTE` | rclone remote name for the Drive mirror | *(off)* |
+| `ENGRAM_DRIVE_PATH` | Folder inside the Drive remote | `engram-kb` |
+| `ENGRAM_SERVE_PORT` | Port the `engram serve` daemon listens on (loopback only) | `8765` |
+| `ENGRAM_PROXY_PORT` | Port the API proxy listens on | `8788` |
+| `ENGRAM_PROXY_DIR` | Where the proxy writes captures | `./.engram/api` |
+
+The browser extension is configured in its own **Settings** page (provider keys, GitHub token/repo), stored in `chrome.storage` — it doesn't read `.env`.
+
 ## How capture works, and its limits
 
 Capture reads the conversation JSON the site already fetches (Claude, ChatGPT) or, for Gemini, reads the page DOM. A few things worth knowing:
@@ -241,12 +295,37 @@ Capture reads the conversation JSON the site already fetches (Claude, ChatGPT) o
 
 ## Project layout
 
-It's a small TypeScript monorepo:
+It's a small TypeScript monorepo (npm workspaces). Four packages, each with a single job:
 
-- **`@engram/core`** — the engine: parsers, the summarizer, the file layout, the Markdown renderer.
-- **`@engram/cli`** — `engram ingest <path>` and `engram sync`.
-- **`@engram/extension`** — the Manifest V3 browser extension (Claude + ChatGPT).
-- **`@engram/proxy`** — the API capture proxy.
+```text
+packages/
+├─ core/          @engram/core — the engine (pure, no CLI/browser deps)
+│  └─ src/
+│     ├─ types.ts            the Conversation / KBEntry contracts
+│     ├─ parsers/            file-format → normalized Conversation
+│     ├─ providers.ts        the LLM provider registry + failover order
+│     ├─ llm-client.ts       tool-call request + JSON-mode fallback
+│     ├─ summarize.ts        Conversation → KBEntry (with retries)
+│     ├─ organize.ts         KBEntry → kb/YYYY/MM/project/slug.md path
+│     ├─ render.ts           KBEntry → Markdown
+│     ├─ util.ts             shared pure helpers (hash, slug, text)
+│     └─ browser.ts          the node-free surface the extension imports
+├─ cli/           @engram/cli — ingest · sync · serve (the daemon)
+│  └─ src/         config.ts · env.ts · writer.ts · ingest/sync/serve.ts
+├─ extension/     @engram/extension — Manifest V3 (Claude · ChatGPT · Gemini)
+│  └─ src/
+│     ├─ interceptor.ts      MAIN-world fetch hook (network capture)
+│     ├─ content.ts          injects the interceptor, relays captures
+│     ├─ gemini-capture.ts   DOM capture for Gemini
+│     ├─ providers/          per-site WebProvider (matchUrl + parse)
+│     ├─ background.ts        routes captures: self-contained → daemon → store
+│     ├─ self-sync.ts        in-browser summarize + push
+│     ├─ github.ts           GitHub contents API client
+│     ├─ settings.ts         Options state (chrome.storage)
+│     └─ popup.ts / options.ts   the two UIs
+└─ proxy/         @engram/proxy — API capture proxy (base-URL shim)
+   └─ src/         server.ts · capture.ts · providers.ts
+```
 
 ```bash
 npm run build    # type-check + compile everything
@@ -309,6 +388,24 @@ Write `parse` defensively (the response schema is the provider's, not yours), dr
 Exports (ChatGPT data export, Claude Code transcripts, …) are parsed in [`packages/core/src/parsers/`](packages/core/src/parsers/). Add a `parseX(raw): Conversation | Conversation[]` plus a detector in `parseAny` ([`parsers/index.ts`](packages/core/src/parsers/index.ts)), and `engram ingest` reads the new format for free.
 
 Each piece is small and unit-tested in isolation, so a new provider or parser has an obvious place to add a test alongside it.
+
+## Troubleshooting
+
+**The extension captures nothing / the badge stays 0.** After you load or reload the extension, **reload the claude.ai / chatgpt.com tab** — old tabs run the previous content script. New chats are captured as you send messages; if one seems missing, reloading the tab always forces a capture.
+
+**Console shows "Extension context invalidated."** Harmless — it means you reloaded the extension while a tab was open. Reload that tab.
+
+**Popup says "Summarize failed."** It shows the real error in red. The usual cause is a **free-tier rate limit** (Groq is 12k tokens/minute) — Engram truncates oversized chats and fails over to your other configured providers, so add a **Gemini** or **OpenRouter** key in Settings for headroom, or wait a minute. A `401` means the key in Settings is wrong.
+
+**The daemon (`npm start`) logs nothing even though the extension is capturing.** You have a key set in the **extension's Settings**, so captures go through the in-browser path, not the daemon. Either add a GitHub token in Settings (self-contained mode), or clear the Settings key so captures route to the daemon.
+
+**Notes land in the wrong place.** Check `ENGRAM_KB_DIR` in `.env`. If it's `./kb`, notes go inside the *code* repo (gitignored) instead of your KB repo — point it at your `engram-kb` clone.
+
+**`git push failed … (fetch first / rejected).`** Your KB repo's remote is ahead. `engram sync` now auto-rebases before pushing; if a rare conflict blocks it, run `cd ~/engram-kb && git pull --rebase origin main` once.
+
+**`rclone config` → `403 … insufficient authentication scopes`.** That's the "Configure this as a Shared Drive (Team Drive)?" prompt — answer **`n`**. With minimum scope (`drive.file`) rclone can't list Team Drives; you want your personal Drive.
+
+**Ollama summarize fails.** Use a **tool-capable** model (`llama3.1`, `qwen2.5`, `mistral-nemo`). Engram's JSON-mode fallback covers most others, but a few can't produce structured output at all.
 
 ## Status
 

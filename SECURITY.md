@@ -28,6 +28,21 @@ That token can only read/write the one private repo, so a leak can't touch anyth
 
 `engram serve` listens on `127.0.0.1` only and accepts requests **only** from the browser extension or local tools — never from a web page. It rejects any request carrying a browser (`http(s)://`) `Origin`, and rejects any non-loopback `Host` (so DNS-rebinding can't reach it). This prevents a site you visit from driving the daemon to spend your API key, write notes, or push to your repo. The API proxy similarly pins each forwarded request to its provider's origin, so a crafted path can't redirect your key to another host.
 
+## Why the extension asks for its permissions
+
+Every host permission maps to one concrete job — nothing is requested "just in case":
+
+| Permission | Why |
+| --- | --- |
+| `storage` | Save your Settings and captured conversations locally in the browser. |
+| `claude.ai`, `chatgpt.com`, `chat.openai.com`, `gemini.google.com` | **Read the conversation you have open** — this is the capture itself (intercept the JSON the page fetches, or read Gemini's DOM). |
+| `api.groq.com`, `api.openai.com`, `api.anthropic.com`, `generativelanguage.googleapis.com`, `openrouter.ai` | Send the transcript to **the one provider you chose** to summarize it (self-contained mode). |
+| `localhost:11434` | Talk to a local **Ollama** server, if you use it (nothing leaves your machine). |
+| `localhost:8765` | Hand captures to the optional local **daemon**, if you run one. |
+| `api.github.com` | Push finished notes to **your** private repo — only if you set a GitHub token + repo. |
+
+The extension **only reads** conversations you open — it never sends messages, changes settings, or takes any account action.
+
 ## Unofficial provider endpoints
 
 Web capture works by reading the conversation JSON that claude.ai / chatgpt.com already fetch (and, for Gemini, by reading the page DOM). These are **unofficial, undocumented interfaces** that can change at any time and break capture. Engram never automates sending messages or any account action — it only reads conversations you open.
